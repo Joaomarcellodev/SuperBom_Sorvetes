@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CircleCheck, NotebookPen, Pencil, TriangleAlert, UserRound, Users, WifiOff } from "lucide-react";
+import Link from "next/link";
+import { CircleCheck, NotebookPen, Pencil, Tag, TriangleAlert, UserRound, Users, WifiOff } from "lucide-react";
 import { Badge } from "../atoms/Badge";
 import { Button } from "../atoms/Button";
 import { Card } from "../atoms/Card";
 import { Input } from "../atoms/Input";
 import { Label } from "../atoms/Label";
+import { MoneyInput } from "../atoms/MoneyInput";
 import { Banner } from "../molecules/Banner";
 import { Disclosure } from "../molecules/Disclosure";
 import { Field } from "../molecules/Field";
@@ -15,9 +17,12 @@ import { SectionHeader } from "../molecules/SectionHeader";
 import { SellerToggle, type SellerOption } from "../molecules/SellerToggle";
 import { NewRouteModal } from "./NewRouteModal";
 import { RouteSelector } from "./RouteSelector";
-import { useRoutes } from "@/hooks/useData";
+import { usePrices, useRoutes } from "@/hooks/useData";
+import { amountFor, priceMap } from "@/lib/finance";
+import { formatMoney } from "@/lib/money";
 import { formatShortDate, todayStr } from "@/lib/format";
 import { PRODUCTS, emptyItems, sumItems } from "@/lib/products";
+import type { ProductId, UnitPrices } from "@/lib/types";
 import { saveSale } from "@/lib/repo";
 import { useSession } from "@/providers/SessionProvider";
 import { useSync } from "@/providers/SyncProvider";
@@ -37,6 +42,7 @@ function readLastRoute(): string | null {
 export function SaleForm() {
   const { seller, sellers } = useSession();
   const routes = useRoutes();
+  const prices = usePrices();
   const { online, configured, syncNow } = useSync();
   const { toast } = useToast();
 
@@ -50,6 +56,8 @@ export function SaleForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newRouteOpen, setNewRouteOpen] = useState(false);
+  /** preço ajustado só nesta venda (por produto); sem ajuste = preço padrão */
+  const [priceOverride, setPriceOverride] = useState<UnitPrices>({});
 
   const routeList = routes ?? [];
   // Rota escolhida > última rota usada neste aparelho > primeira da lista.
@@ -76,6 +84,12 @@ export function SaleForm() {
 
   const sellerId = sellerChoice ?? seller.id;
   const total = sumItems(qty);
+  const defaults = priceMap(prices);
+  const unitPrices = Object.fromEntries(PRODUCTS.map((p) => [p.id, priceOverride[p.id] ?? defaults[p.id]])) as Record<ProductId, number>;
+  const amount = amountFor(qty, unitPrices);
+  const pricesMissing = PRODUCTS.every((p) => defaults[p.id] === 0);
+  const adjusted = PRODUCTS.some((p) => priceOverride[p.id] !== undefined && priceOverride[p.id] !== defaults[p.id]);
+  const soldProducts = PRODUCTS.filter((p) => qty[p.id] > 0);
   const isToday = saleDate === todayStr();
 
   const chooseRoute = (id: string) => {
@@ -95,7 +109,7 @@ export function SaleForm() {
 
     setSaving(true);
     try {
-      await saveSale({ routeId, pointName, sellerId, saleDate, note, items: qty });
+      await saveSale({ routeId, pointName, sellerId, saleDate, note, items: qty, unitPrices });
       if (online && configured) {
         toast({ title: "Venda salva!", description: "Enviando para o servidor.", tone: "success" });
       } else {
@@ -106,6 +120,7 @@ export function SaleForm() {
         });
       }
       setQty(emptyItems());
+      setPriceOverride({});
       setPointName("");
       setNote("");
       void syncNow();
@@ -206,7 +221,47 @@ export function SaleForm() {
             ))}
           </div>
         </div>
+        <div className="flex items-center justify-between gap-3 px-1">
+          <span className="text-label-md uppercase text-on-surface-variant">Valor da venda</span>
+          <span className="flex items-center gap-2">
+            {adjusted && <Badge tone="secondary">Preço ajustado</Badge>}
+            <span className="font-display text-headline-md text-on-surface">{formatMoney(amount)}</span>
+          </span>
+        </div>
+        {pricesMissing && (
+          <p className="rounded-control bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface-variant">
+            Nenhum preço cadastrado ainda.{" "}
+            <Link href="/financeiro#precos" className="font-bold text-secondary hover:underline">Definir preços no Financeiro</Link>
+          </p>
+        )}
       </Card>
+
+      {soldProducts.length > 0 && (
+        <Disclosure icon={<Tag />} title="Preço por pacote nesta venda">
+          <p className="text-body-sm text-on-surface-variant">Já vem com o preço padrão. Mude só se este cliente pagou diferente.</p>
+          {soldProducts.map((p) => (
+            <div key={p.id} className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate text-label-lg text-on-surface">
+                {p.name}
+                <span className="ml-1.5 text-body-sm font-normal text-on-surface-variant">× {qty[p.id]}</span>
+              </span>
+              <div className="w-36 shrink-0">
+                <MoneyInput
+                  size="sm"
+                  aria-label={`Preço por pacote de ${p.name}`}
+                  value={unitPrices[p.id]}
+                  onChange={(cents) => setPriceOverride((o) => ({ ...o, [p.id]: cents }))}
+                />
+              </div>
+            </div>
+          ))}
+          {adjusted && (
+            <Button variant="ghost" size="sm" onClick={() => setPriceOverride({})}>
+              Voltar ao preço padrão
+            </Button>
+          )}
+        </Disclosure>
+      )}
 
       <Disclosure icon={<NotebookPen />} title="Observação (opcional)">
         <Field label="Anotação sobre esta venda">

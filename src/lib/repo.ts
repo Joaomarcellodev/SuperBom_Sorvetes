@@ -1,6 +1,7 @@
 import { getDb } from "./db";
-import { sumItems } from "./products";
-import type { Route, RoutePoint, Sale, SaleItems } from "./types";
+import { amountFor } from "./finance";
+import { PRODUCTS, sumItems } from "./products";
+import type { Expense, ExpenseCategory, ProductId, Route, RoutePoint, Sale, SaleItems, UnitPrices } from "./types";
 
 /** Escritas locais. Nada aqui precisa de internet. */
 
@@ -11,6 +12,8 @@ export interface NewSaleInput {
   saleDate: string;
   note: string;
   items: SaleItems;
+  /** preço por pacote usado nesta venda (vem do preço padrão, pode ser ajustado) */
+  unitPrices: UnitPrices;
 }
 
 export async function saveSale(input: NewSaleInput): Promise<Sale> {
@@ -19,6 +22,11 @@ export async function saveSale(input: NewSaleInput): Promise<Sale> {
   if (total <= 0) throw new Error("Informe ao menos 1 pacote.");
 
   const pointName = input.pointName.trim();
+  const items: SaleItems = Object.fromEntries(Object.entries(input.items).filter(([, qty]) => (qty ?? 0) > 0));
+  // Guarda o preço de todos os produtos vendidos (mesmo R$ 0): marca a venda como "com preço próprio".
+  const unitPrices: UnitPrices = Object.fromEntries(
+    PRODUCTS.filter((p) => (items[p.id] ?? 0) > 0).map((p) => [p.id, Math.max(0, Math.round(input.unitPrices[p.id] ?? 0))]),
+  );
   const sale: Sale = {
     id: crypto.randomUUID(),
     routeId: input.routeId,
@@ -26,8 +34,10 @@ export async function saveSale(input: NewSaleInput): Promise<Sale> {
     sellerId: input.sellerId,
     saleDate: input.saleDate,
     note: input.note.trim(),
-    items: Object.fromEntries(Object.entries(input.items).filter(([, qty]) => (qty ?? 0) > 0)),
+    items,
     total,
+    unitPrices,
+    amountCents: amountFor(items, unitPrices),
     createdAt: new Date().toISOString(),
     deletedAt: null,
     dirty: 1,
@@ -59,6 +69,45 @@ export async function deleteSale(id: string): Promise<void> {
 /** Troca (ou remove, com null) a foto do perfil. Fica no aparelho e sobe na próxima sincronização. */
 export async function updateSellerAvatar(sellerId: string, avatarUrl: string | null): Promise<void> {
   await getDb().sellers.update(sellerId, { avatarUrl, avatarDirty: 1 });
+}
+
+/** Preço padrão de um produto (centavos). Sincroniza com o sócio. */
+export async function setProductPrice(productId: ProductId, priceCents: number): Promise<void> {
+  await getDb().prices.put({ productId, priceCents: Math.max(0, Math.round(priceCents)), dirty: 1 });
+}
+
+export interface NewExpenseInput {
+  description: string;
+  category: ExpenseCategory;
+  amountCents: number;
+  expenseDate: string;
+  sellerId: string;
+  note: string;
+}
+
+export async function saveExpense(input: NewExpenseInput): Promise<Expense> {
+  const description = input.description.trim();
+  if (!description) throw new Error("Descreva o gasto (ex.: gasolina da rota).");
+  if (input.amountCents <= 0) throw new Error("Informe o valor do gasto.");
+  const expense: Expense = {
+    id: crypto.randomUUID(),
+    description,
+    category: input.category,
+    amountCents: Math.round(input.amountCents),
+    expenseDate: input.expenseDate,
+    sellerId: input.sellerId,
+    note: input.note.trim(),
+    createdAt: new Date().toISOString(),
+    deletedAt: null,
+    dirty: 1,
+  };
+  await getDb().expenses.add(expense);
+  return expense;
+}
+
+/** Exclusão lógica, como nas vendas. */
+export async function deleteExpense(id: string): Promise<void> {
+  await getDb().expenses.update(id, { deletedAt: new Date().toISOString(), dirty: 1 });
 }
 
 export async function createRoute(name: string, cities: string[]): Promise<Route> {

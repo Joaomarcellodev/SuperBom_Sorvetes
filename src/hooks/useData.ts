@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { getDb } from "@/lib/db";
-import type { Route, RoutePoint, Sale, Seller } from "@/lib/types";
+import type { Expense, ProductPrice, Route, RoutePoint, Sale, Seller } from "@/lib/types";
 
 /**
  * Leituras reativas do banco local: a tela atualiza sozinha quando uma venda é salva
@@ -16,6 +16,19 @@ export function useSales(): Sale[] | undefined {
       .filter((s) => !s.deletedAt)
       .sort((a, b) => (a.saleDate + a.createdAt < b.saleDate + b.createdAt ? 1 : -1));
   }, []);
+}
+
+export function useExpenses(): Expense[] | undefined {
+  return useLiveQuery(async () => {
+    const all = await getDb().expenses.toArray();
+    return all
+      .filter((e) => !e.deletedAt)
+      .sort((a, b) => (a.expenseDate + a.createdAt < b.expenseDate + b.createdAt ? 1 : -1));
+  }, []);
+}
+
+export function usePrices(): ProductPrice[] | undefined {
+  return useLiveQuery(() => getDb().prices.toArray(), []);
 }
 
 export function useRoutes(): Route[] | undefined {

@@ -31,6 +31,9 @@ export interface RoutePoint {
   dirty: 0 | 1;
 }
 
+/** Preço por pacote, em centavos, por produto. */
+export type UnitPrices = Partial<Record<ProductId, number>>;
+
 export interface Sale {
   id: string;
   routeId: string;
@@ -42,6 +45,33 @@ export interface Sale {
   items: SaleItems;
   /** soma dos pacotes (redundante de propósito, facilita consultas) */
   total: number;
+  /** Preço por pacote usado nesta venda. Vazio = venda antiga, usa o preço padrão atual. */
+  unitPrices?: UnitPrices;
+  /** Valor da venda em centavos (0 em vendas antigas sem preço). */
+  amountCents?: number;
+  createdAt: string;
+  deletedAt: string | null;
+  dirty: 0 | 1;
+}
+
+export interface ProductPrice {
+  productId: ProductId;
+  priceCents: number;
+  dirty: 0 | 1;
+}
+
+export type ExpenseCategory = "combustivel" | "reposicao" | "manutencao" | "alimentacao" | "pessoal" | "embalagem" | "outros";
+
+export interface Expense {
+  id: string;
+  description: string;
+  category: ExpenseCategory;
+  amountCents: number;
+  /** YYYY-MM-DD no fuso do aparelho */
+  expenseDate: string;
+  /** quem pagou */
+  sellerId: string;
+  note: string;
   createdAt: string;
   deletedAt: string | null;
   dirty: 0 | 1;
