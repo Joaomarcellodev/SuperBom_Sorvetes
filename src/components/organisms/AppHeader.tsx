@@ -34,7 +34,7 @@ export function AppHeader() {
               className="flex items-center gap-2 rounded-control py-1 pl-2 pr-1 transition-colors hover:bg-surface-container-high"
             >
               <span className="hidden flex-col items-end min-[360px]:flex">
-                <span className="text-label-sm leading-none text-on-surface-variant">Vendedor</span>
+                <span className="max-w-32 truncate text-label-sm leading-none text-on-surface-variant">{seller.role}</span>
                 <span className="max-w-28 truncate text-label-md font-bold leading-tight text-on-surface">{seller.name}</span>
               </span>
               <Avatar name={seller.name} photo={seller.avatarUrl} size="sm" />

@@ -35,7 +35,7 @@ const friendlyError = (e: unknown): string => {
     return "Sem conexão com o servidor. Tentaremos de novo.";
   }
   // Coluna/tabela nova que ainda não existe no Supabase.
-  if (/schema cache|does not exist|PGRST20[45]/i.test(msg)) {
+  if (/schema cache|does not exist|PGRST20[45]|permission denied/i.test(msg)) {
     return "Banco desatualizado: rode no SQL Editor do Supabase os arquivos novos de supabase/migrations.";
   }
   return msg;

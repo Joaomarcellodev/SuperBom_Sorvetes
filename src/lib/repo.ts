@@ -140,6 +140,16 @@ export async function restoreRoute(id: string): Promise<void> {
   await db.routes.update(id, { deletedAt: null, dirty: 1 });
 }
 
+export const ROLE_MAX = 40;
+
+/** Troca o cargo exibido no perfil (único dado do perfil editável pelo app). */
+export async function updateSellerRole(sellerId: string, role: string): Promise<void> {
+  const clean = role.trim().replace(/\s+/g, " ");
+  if (!clean) throw new Error("Escreva o cargo (ex.: Sócio administrador).");
+  if (clean.length > ROLE_MAX) throw new Error(`Use até ${ROLE_MAX} letras.`);
+  await getDb().sellers.update(sellerId, { role: clean, roleDirty: 1 });
+}
+
 export async function createRoute(name: string, cities: string[]): Promise<Route> {
   const db = getDb();
   const cleanName = name.trim();
