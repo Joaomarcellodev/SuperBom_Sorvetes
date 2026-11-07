@@ -8,7 +8,7 @@ Stack: Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · Atomic 
 
 ```bash
 npm install
-cp .env.local.example .env.local   # preencha URL e anon key do Supabase
+cp .env.local.example .env.local   # preencha URL e publishable key do Supabase
 npm run dev                        # desenvolvimento (service worker desligado)
 ```
 
@@ -31,7 +31,7 @@ update public.sellers
  where name = 'Sócio 1';
 ```
 
-3. Copie **Project URL** e **anon key** (Settings → API) para o `.env.local`.
+3. Copie **Project URL** e **publishable key** (Settings → API Keys) para o `.env.local`.
 
 ## Como funciona o offline
 
