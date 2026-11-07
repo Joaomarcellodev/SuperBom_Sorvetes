@@ -68,7 +68,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       return;
     }
     // Offline não é erro: as vendas ficam no aparelho e a tela já mostra "Offline".
-    if (!navigator.onLine) return;
+    if (navigator.onLine === false) return;
     // Se já tem uma sincronização rodando, pede uma segunda rodada em vez de perder o pedido
     // (acontece quando a venda é salva no meio de um envio).
     if (running.current) {
@@ -94,7 +94,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
+    setOnline(navigator.onLine !== false);
     const goOnline = () => {
       setOnline(true);
       void syncNow();
