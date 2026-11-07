@@ -15,9 +15,9 @@ import { Field } from "../molecules/Field";
 import { ProductCard } from "../molecules/ProductCard";
 import { SectionHeader } from "../molecules/SectionHeader";
 import { SellerToggle, type SellerOption } from "../molecules/SellerToggle";
-import { NewRouteModal } from "./NewRouteModal";
+import { RouteFormModal } from "./RouteFormModal";
 import { RouteSelector } from "./RouteSelector";
-import { usePrices, useRoutes } from "@/hooks/useData";
+import { useActiveRoutes, usePrices } from "@/hooks/useData";
 import { amountFor, priceMap } from "@/lib/finance";
 import { formatMoney } from "@/lib/money";
 import { formatShortDate, todayStr } from "@/lib/format";
@@ -41,7 +41,7 @@ function readLastRoute(): string | null {
 
 export function SaleForm() {
   const { seller, sellers } = useSession();
-  const routes = useRoutes();
+  const routes = useActiveRoutes();
   const prices = usePrices();
   const { online, configured, syncNow } = useSync();
   const { toast } = useToast();
@@ -56,6 +56,7 @@ export function SaleForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newRouteOpen, setNewRouteOpen] = useState(false);
+  const [editRouteOpen, setEditRouteOpen] = useState(false);
   /** preço ajustado só nesta venda (por produto); sem ajuste = preço padrão */
   const [priceOverride, setPriceOverride] = useState<UnitPrices>({});
 
@@ -153,6 +154,7 @@ export function SaleForm() {
         pointName={pointName}
         onPointChange={setPointName}
         onNewRoute={() => setNewRouteOpen(true)}
+        onEditRoute={() => setEditRouteOpen(true)}
       />
 
       <Card className="space-y-4">
@@ -290,7 +292,16 @@ export function SaleForm() {
 
     </form>
     {/* Fora do <form> da venda: o envio do formulário da rota não pode disparar o salvar da venda. */}
-    <NewRouteModal open={newRouteOpen} onClose={() => setNewRouteOpen(false)} onCreated={(r) => chooseRoute(r.id)} />
+    <RouteFormModal open={newRouteOpen} onClose={() => setNewRouteOpen(false)} onSaved={(r) => chooseRoute(r.id)} />
+    <RouteFormModal
+      open={editRouteOpen}
+      route={routeList.find((r) => r.id === routeId) ?? null}
+      onClose={() => setEditRouteOpen(false)}
+      onSaved={() => {
+        toast({ title: "Rota atualizada" });
+        void syncNow();
+      }}
+    />
     </>
   );
 }
