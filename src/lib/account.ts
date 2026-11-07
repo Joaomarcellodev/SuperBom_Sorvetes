@@ -27,7 +27,8 @@ export async function changePin(sellerId: string, currentPin: string, newPin: st
 
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase não configurado.");
-  if (typeof navigator !== "undefined" && !navigator.onLine) throw new Error("Sem internet. Conecte-se para trocar o PIN.");
+  // Só considera offline quando o navegador diz isso com certeza (onLine === false).
+  if (typeof navigator !== "undefined" && navigator.onLine === false) throw new Error("Sem internet. Conecte-se para trocar o PIN.");
 
   const { data, error } = await sb.rpc("change_seller_pin", {
     p_seller_id: sellerId,
