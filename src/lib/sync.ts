@@ -24,6 +24,8 @@ interface RemoteRoute {
   name: string;
   cities: string[];
   created_at: string;
+  /** só existe depois da migração 0004 */
+  deleted_at?: string | null;
 }
 interface RemotePoint {
   id: string;
@@ -91,11 +93,24 @@ export async function syncAll(): Promise<SyncResult> {
   // ---------- 1. ENVIAR ----------
   const dirtyRoutes = await db.routes.where("dirty").equals(1).toArray();
   if (dirtyRoutes.length) {
-    const { error } = await sb.from("routes").upsert(
-      dirtyRoutes.map((r) => ({ id: r.id, name: r.name, cities: r.cities, created_at: r.createdAt })),
-    );
+    const base = dirtyRoutes.map((r) => ({ id: r.id, name: r.name, cities: r.cities, created_at: r.createdAt }));
+    let { error } = await sb.from("routes").upsert(base.map((row, k) => ({ ...row, deleted_at: dirtyRoutes[k]?.deletedAt ?? null })));
+    // Migração 0004 ainda não rodou: nome/cidades sobem, a exclusão fica pendente até o banco ser atualizado.
+    const withoutDelete = isSchemaError(error);
+    if (withoutDelete) {
+      late ??= new Error(error!.message);
+      ({ error } = await sb.from("routes").upsert(base));
+    }
     fail(error);
-    await db.routes.where("id").anyOf(dirtyRoutes.map((r) => r.id)).modify({ dirty: 0 });
+    // Só marca como enviada se ninguém mexeu na rota durante o envio.
+    const sent = new Map(dirtyRoutes.map((r) => [r.id, `${r.name}|${r.cities.join(",")}|${r.deletedAt ?? ""}`]));
+    await db.routes
+      .where("id")
+      .anyOf([...sent.keys()])
+      .modify((current) => {
+        const same = sent.get(current.id) === `${current.name}|${current.cities.join(",")}|${current.deletedAt ?? ""}`;
+        if (same && (!withoutDelete || !current.deletedAt)) current.dirty = 0;
+      });
     pushed += dirtyRoutes.length;
   }
 
@@ -179,7 +194,8 @@ export async function syncAll(): Promise<SyncResult> {
   const [sellersRes, routesRes, pointsRes] = await Promise.all([
     // "*" e não a lista de colunas: funciona com ou sem a coluna avatar_url (migração 0002).
     sb.from("sellers").select("*"),
-    sb.from("routes").select("id,name,cities,created_at"),
+    // "*": funciona com ou sem a coluna deleted_at (migração 0004).
+    sb.from("routes").select("*"),
     sb.from("route_points").select("id,route_id,name"),
   ]);
   fail(sellersRes.error);
@@ -212,7 +228,7 @@ export async function syncAll(): Promise<SyncResult> {
     const localDirtyRoutes = new Set(await db.routes.where("dirty").equals(1).primaryKeys());
     const routes: Route[] = remoteRoutes
       .filter((r) => !localDirtyRoutes.has(r.id))
-      .map((r) => ({ id: r.id, name: r.name, cities: r.cities ?? [], createdAt: r.created_at, dirty: 0 }));
+      .map((r) => ({ id: r.id, name: r.name, cities: r.cities ?? [], createdAt: r.created_at, deletedAt: r.deleted_at ?? null, dirty: 0 }));
     await db.routes.bulkPut(routes);
 
     const localDirtyPoints = new Set(await db.points.where("dirty").equals(1).primaryKeys());

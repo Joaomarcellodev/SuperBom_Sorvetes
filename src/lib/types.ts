@@ -20,6 +20,8 @@ export interface Route {
   name: string;
   cities: string[];
   createdAt: string;
+  /** Rota excluída: some das listas, mas as vendas antigas continuam com o nome. null = ativa. */
+  deletedAt?: string | null;
   /** 1 = criada/alterada no aparelho e ainda não enviada ao Supabase */
   dirty: 0 | 1;
 }
