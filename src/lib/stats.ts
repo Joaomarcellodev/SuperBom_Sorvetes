@@ -1,46 +1,97 @@
-import { addDays, startOfMonth, startOfWeek } from "./format";
+import { matchesFilters, periodStart, type Filters } from "./filters";
+import { saleAmount } from "./finance";
+import { addDays, parseDateStr, startOfMonth } from "./format";
 import { PRODUCTS } from "./products";
-import type { ProductId, Sale } from "./types";
+import { buildBuckets, type Bucket } from "./series";
+import type { ProductId, Route, Sale, Seller } from "./types";
 
 const sumTotal = (sales: Sale[]) => sales.reduce((acc, s) => acc + s.total, 0);
 
-export interface DashboardStats {
-  today: number;
-  yesterday: number;
-  week: number;
-  month: number;
-  /** variação de hoje contra ontem, em %; null quando ontem foi zero */
-  deltaVsYesterday: number | null;
-  byProductToday: Array<{ id: ProductId; name: string; packages: number; share: number }>;
+/** Variação percentual; null quando não há base (anterior = 0). */
+const delta = (now: number, before: number): number | null =>
+  before > 0 ? Math.round(((now - before) / before) * 100) : null;
+
+/** Janela anterior de mesmo tamanho, para comparar (hoje x ontem, 7 dias x 7 dias antes, mês x mês passado). */
+function previousWindow(filters: Filters, today: string): { from: string; to: string } | null {
+  if (filters.period === "today") {
+    const y = addDays(today, -1);
+    return { from: y, to: y };
+  }
+  if (filters.period === "7d") return { from: addDays(today, -13), to: addDays(today, -7) };
+  if (filters.period === "month") {
+    // Mês até hoje x mesmos dias do mês passado.
+    const start = parseDateStr(startOfMonth(today));
+    start.setMonth(start.getMonth() - 1);
+    const from = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+    const day = Number(today.slice(8));
+    const lastOfPrev = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    return { from, to: `${from.slice(0, 8)}${String(Math.min(day, lastOfPrev)).padStart(2, "0")}` };
+  }
+  return null;
 }
 
-export function computeDashboardStats(sales: Sale[], today: string): DashboardStats {
-  const yesterdayStr = addDays(today, -1);
-  const weekStart = startOfWeek(today);
-  const monthStart = startOfMonth(today);
+export interface Dashboard {
+  packages: number;
+  amountCents: number;
+  count: number;
+  avgPackages: number;
+  deltaPackages: number | null;
+  deltaAmount: number | null;
+  buckets: Bucket[];
+  byProduct: Array<{ id: ProductId; label: string; value: number }>;
+  byRoute: Array<{ id: string; label: string; value: number }>;
+  bySeller: Array<{ id: string; label: string; value: number }>;
+}
 
-  const todaySales = sales.filter((s) => s.saleDate === today);
-  const todayTotal = sumTotal(todaySales);
-  const yesterdayTotal = sumTotal(sales.filter((s) => s.saleDate === yesterdayStr));
+export function computeDashboard(
+  sales: Sale[],
+  filters: Filters,
+  today: string,
+  defaults: Record<ProductId, number>,
+  routes: Route[],
+  sellers: Seller[],
+): Dashboard {
+  const inView = sales.filter((s) => matchesFilters({ date: s.saleDate, routeId: s.routeId, sellerId: s.sellerId }, filters, today));
+  const packages = sumTotal(inView);
+  const amountCents = inView.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
 
-  const byProductToday = PRODUCTS.map((p) => {
-    const packages = todaySales.reduce((acc, s) => acc + (s.items[p.id] ?? 0), 0);
-    return {
-      id: p.id,
-      name: p.name,
-      packages,
-      share: todayTotal > 0 ? Math.round((packages / todayTotal) * 100) : 0,
-    };
-  });
+  const prev = previousWindow(filters, today);
+  const before = prev
+    ? sales.filter(
+        (s) =>
+          s.saleDate >= prev.from &&
+          s.saleDate <= prev.to &&
+          (!filters.routeId || s.routeId === filters.routeId) &&
+          (!filters.sellerId || s.sellerId === filters.sellerId),
+      )
+    : [];
+
+  const from = periodStart(filters.period, today) || inView.map((s) => s.saleDate).sort()[0] || today;
+  const { buckets } = buildBuckets(
+    inView.map((s) => ({ date: s.saleDate, createdAt: s.createdAt, total: s.total })),
+    from,
+    today,
+    1,
+    (x) => [x.total],
+  );
+
+  const group = <K extends string>(key: (s: Sale) => K, label: (k: K) => string) => {
+    const map = new Map<K, number>();
+    for (const s of inView) map.set(key(s), (map.get(key(s)) ?? 0) + s.total);
+    return [...map.entries()].map(([id, value]) => ({ id, label: label(id), value }));
+  };
 
   return {
-    today: todayTotal,
-    yesterday: yesterdayTotal,
-    week: sumTotal(sales.filter((s) => s.saleDate >= weekStart && s.saleDate <= today)),
-    month: sumTotal(sales.filter((s) => s.saleDate >= monthStart && s.saleDate <= today)),
-    deltaVsYesterday:
-      yesterdayTotal > 0 ? Math.round(((todayTotal - yesterdayTotal) / yesterdayTotal) * 100) : null,
-    byProductToday,
+    packages,
+    amountCents,
+    count: inView.length,
+    avgPackages: inView.length ? Math.round((packages / inView.length) * 10) / 10 : 0,
+    deltaPackages: prev ? delta(packages, sumTotal(before)) : null,
+    deltaAmount: prev ? delta(amountCents, before.reduce((acc, s) => acc + saleAmount(s, defaults), 0)) : null,
+    buckets,
+    byProduct: PRODUCTS.map((p) => ({ id: p.id, label: p.name, value: inView.reduce((acc, s) => acc + (s.items[p.id] ?? 0), 0) })),
+    byRoute: group((s) => s.routeId, (id) => routes.find((r) => r.id === id)?.name ?? "Rota removida"),
+    bySeller: group((s) => s.sellerId, (id) => sellers.find((x) => x.id === id)?.name ?? "—"),
   };
 }
 

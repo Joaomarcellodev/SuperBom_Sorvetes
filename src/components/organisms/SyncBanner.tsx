@@ -1,82 +1,84 @@
 "use client";
 
-import { CloudCheck, CloudOff, CloudUpload, RefreshCw, TriangleAlert } from "lucide-react";
-import { Badge } from "../atoms/Badge";
+import type { ReactNode } from "react";
+import { CloudOff, CloudUpload, RefreshCw, TriangleAlert } from "lucide-react";
 import { Button } from "../atoms/Button";
-import { Card } from "../atoms/Card";
-import { StatusDot } from "../atoms/StatusDot";
-import { formatSyncMoment } from "@/lib/format";
+import { cn } from "@/lib/format";
 import { useSync } from "@/providers/SyncProvider";
 
-/** Cartão do topo da tela inicial: diz com clareza se há vendas esperando para subir. */
+/**
+ * Aviso compacto no topo do painel. Só aparece quando há algo a fazer:
+ * vendas esperando envio, erro de sincronização ou Supabase não configurado.
+ * Tudo em dia = nada na tela (o cabeçalho já mostra "Online").
+ */
 export function SyncBanner() {
-  const { configured, online, syncing, justSynced, error, lastSyncAt, pending, syncNow } = useSync();
+  const { configured, online, syncing, error, pending, syncNow } = useSync();
   const waiting = pending.sales + pending.other;
 
   if (!configured) {
     return (
-      <Card className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-error/15 text-error">
-          <TriangleAlert className="size-5" />
-        </span>
-        <div>
-          <p className="text-label-lg text-error">Supabase não configurado</p>
-          <p className="mt-1 text-body-sm text-on-surface-variant">
-            As vendas ficam salvas só neste aparelho. Preencha o <code>.env.local</code> para sincronizar com o sócio.
-          </p>
-        </div>
-      </Card>
+      <Strip tone="error" icon={<TriangleAlert />} title="Supabase não configurado">
+        As vendas ficam só neste aparelho. Preencha o .env.local para sincronizar.
+      </Strip>
     );
   }
-
-  const Icon = !online ? CloudOff : waiting > 0 ? CloudUpload : CloudCheck;
+  if (error) {
+    return (
+      <Strip tone="error" icon={<TriangleAlert />} title="Falha ao sincronizar" action={online ? () => void syncNow() : undefined} busy={syncing}>
+        {error}
+      </Strip>
+    );
+  }
+  if (waiting === 0) return null;
 
   return (
-    <Card className="relative overflow-hidden">
-      <div className="relative z-10 flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-start gap-2">
-          <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-control bg-primary-container/20 text-primary-container">
-            <Icon className="size-6" />
-          </span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {waiting > 0 ? (
-                <Badge tone="primary" uppercase>
-                  <StatusDot tone="primary" pulse size="sm" />
-                  {pending.sales} {pending.sales === 1 ? "venda local" : "vendas locais"}
-                </Badge>
-              ) : (
-                <Badge tone="secondary" uppercase>
-                  <StatusDot tone="secondary" size="sm" />
-                  {justSynced ? "Concluído!" : "Tudo em dia"}
-                </Badge>
-              )}
-              <Badge tone="neutral">{online ? "Dispositivo seguro" : "Sem internet"}</Badge>
-            </div>
-            <p className="mt-1 text-body-sm leading-snug text-on-surface">
-              {waiting > 0
-                ? online
-                  ? `${pending.packages} ${pending.packages === 1 ? "pacote aguardando" : "pacotes aguardando"} envio para o servidor.`
-                  : `${pending.packages} ${pending.packages === 1 ? "pacote salvo" : "pacotes salvos"} no aparelho. Envio automático ao reconectar.`
-                : lastSyncAt
-                  ? `Última sincronização: ${formatSyncMoment(lastSyncAt)}.`
-                  : "Ainda não sincronizou com o servidor."}
-            </p>
-            {error && <p role="alert" className="mt-1 text-body-sm text-error">{error}</p>}
-          </div>
-        </div>
-        <Button
-          size="sm"
-          variant={waiting > 0 ? "primary" : "soft"}
-          onClick={() => void syncNow()}
-          loading={syncing}
-          disabled={!online}
-          icon={<RefreshCw className="size-[18px]" />}
-          className="shrink-0"
-        >
-          Sincronizar
-        </Button>
+    <Strip
+      tone="pending"
+      icon={online ? <CloudUpload /> : <CloudOff />}
+      title={`${pending.sales} ${pending.sales === 1 ? "registro" : "registros"} no aparelho`}
+      action={online ? () => void syncNow() : undefined}
+      busy={syncing}
+    >
+      {online
+        ? `${pending.packages} ${pending.packages === 1 ? "pacote aguardando" : "pacotes aguardando"} envio.`
+        : "Sem internet. O envio é automático ao reconectar."}
+    </Strip>
+  );
+}
+
+function Strip({
+  tone,
+  icon,
+  title,
+  children,
+  action,
+  busy,
+}: {
+  tone: "pending" | "error";
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+  action?: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <div
+      role={tone === "error" ? "alert" : "status"}
+      className={cn(
+        "flex items-center gap-3 rounded-card border-l-4 p-3",
+        tone === "error" ? "border-error bg-error-container/25" : "border-primary-container bg-surface-container",
+      )}
+    >
+      <span className={cn("shrink-0 [&_svg]:size-5", tone === "error" ? "text-error" : "text-primary-container")}>{icon}</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-label-lg text-on-surface">{title}</p>
+        <p className="text-body-sm text-on-surface-variant">{children}</p>
       </div>
-    </Card>
+      {action && (
+        <Button size="sm" variant={tone === "error" ? "soft" : "primary"} loading={busy} icon={<RefreshCw className="size-4" />} onClick={action} className="shrink-0">
+          Enviar
+        </Button>
+      )}
+    </div>
   );
 }

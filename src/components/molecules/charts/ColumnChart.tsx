@@ -39,7 +39,7 @@ export function ColumnChart({
     <div className="space-y-3">
       {series.length > 1 && <ChartLegend series={series} />}
 
-      <div className="relative flex gap-2" onPointerLeave={() => setActive(null)}>
+      <div className="relative flex gap-2 pt-2" onPointerLeave={() => setActive(null)}>
         {/* eixo Y */}
         <div className="relative w-12 shrink-0" style={{ height: PLOT_HEIGHT }} aria-hidden>
           {ticks.map((t) => (
@@ -71,7 +71,8 @@ export function ColumnChart({
                 onPointerEnter={() => setActive(i)}
                 onFocus={() => setActive(i)}
                 onBlur={() => setActive(null)}
-                onClick={() => setActive((a) => (a === i ? null : i))}
+                // No toque, pointerenter e click chegam juntos: o clique só fixa a coluna (sem alternar).
+                onClick={() => setActive(i)}
                 className={cn(
                   "flex h-full min-w-0 flex-1 items-end justify-center gap-[2px] px-[1px] outline-none transition-colors",
                   active === i && "bg-white/[0.04]",
