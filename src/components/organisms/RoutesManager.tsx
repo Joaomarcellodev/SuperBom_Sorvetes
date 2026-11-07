@@ -127,14 +127,13 @@ export function RoutesManager() {
         open={toDelete !== null}
         danger
         title="Excluir esta rota?"
+        details={toDelete ? `${toDelete.name} · ${salesLabel(count(toDelete.id))}` : null}
         description={
-          toDelete
-            ? count(toDelete.id) > 0
-              ? `${toDelete.name} some do registro de vendas e das listas. As ${salesLabel(count(toDelete.id))} dela continuam no histórico e nos totais. Dá para restaurar depois.`
-              : `${toDelete.name} some do registro de vendas e das listas. Dá para restaurar depois.`
-            : ""
+          toDelete && count(toDelete.id) > 0
+            ? "Some do registro de vendas. As vendas dela continuam no histórico. Dá para restaurar depois."
+            : "Some do registro de vendas. Dá para restaurar depois."
         }
-        confirmLabel="Excluir rota"
+        confirmLabel="Excluir"
         onConfirm={() => void confirmDelete()}
         onCancel={() => setToDelete(null)}
       />
