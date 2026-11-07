@@ -141,7 +141,7 @@ export function PinLogin() {
       </div>
       {showHelp && (
         <p className="w-full max-w-[18rem] rounded-control bg-surface-container-low p-3 text-center text-body-sm text-on-surface-variant">
-          O PIN é definido na tabela <code>sellers</code> do Supabase. Veja no README como gerar um novo.
+          Entre com o PIN antigo e troque em <b>Ajustes → Mudar PIN</b>. Se esqueceu de vez, o administrador redefine pelo SQL Editor do Supabase (veja o README).
         </p>
       )}
 
