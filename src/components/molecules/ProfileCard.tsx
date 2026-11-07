@@ -12,13 +12,13 @@ export function ProfileCard({ seller, selected, onSelect }: { seller: Seller; se
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
-        "relative flex flex-col items-start gap-2 overflow-hidden rounded-3xl p-4 text-left transition-all duration-150 active:scale-[0.98]",
+        "relative flex flex-col items-start gap-2 overflow-hidden rounded-card p-4 text-left transition-all duration-150 active:scale-[0.98]",
         selected ? "bg-surface-container-high shadow-card" : "bg-surface-container-low opacity-70",
       )}
     >
       <span
         className={cn(
-          "absolute right-3 top-3 flex size-6 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-glow-primary transition-opacity",
+          "absolute right-3 top-3 flex size-6 items-center justify-center rounded-control bg-primary-container text-on-primary-container shadow-glow-primary transition-opacity",
           selected ? "opacity-100" : "opacity-0",
         )}
       >

@@ -20,7 +20,7 @@ export function ProductIcon({ id, size = "md" }: { id: ProductId; size?: "md" | 
     <span
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full",
+        "inline-flex shrink-0 items-center justify-center rounded-control",
         size === "md" ? "size-12" : "size-14",
         tints[id],
       )}

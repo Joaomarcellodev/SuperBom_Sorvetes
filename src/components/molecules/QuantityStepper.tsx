@@ -26,7 +26,7 @@ export function QuantityStepper({
   };
 
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-surface-container-lowest p-2">
+    <div className="flex items-center justify-between rounded-control bg-surface-container-lowest p-2">
       <IconButton size="lg" label={`Diminuir ${label}`} onClick={() => set(value - 1)} disabled={value === 0}>
         <Minus className="size-7" />
       </IconButton>

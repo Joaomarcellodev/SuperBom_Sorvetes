@@ -2,7 +2,7 @@ import { Delete, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/format";
 
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
-const keyBase = "flex h-14 items-center justify-center rounded-2xl transition-all active:scale-95 disabled:opacity-40";
+const keyBase = "flex h-14 items-center justify-center rounded-control transition-all active:scale-95 disabled:opacity-40";
 
 /** Teclado numérico de 56px por tecla. */
 export function PinPad({

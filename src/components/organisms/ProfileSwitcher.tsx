@@ -14,7 +14,6 @@ export function ProfileSwitcher() {
 
   return (
     <Card className="relative overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 size-28 rounded-full bg-primary/10 blur-2xl" />
       <div className="relative flex items-center gap-3">
         <Avatar name={seller.name} size="lg" />
         <div className="min-w-0">

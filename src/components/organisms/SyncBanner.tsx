@@ -16,7 +16,7 @@ export function SyncBanner() {
   if (!configured) {
     return (
       <Card className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-error/15 text-error">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-control bg-error/15 text-error">
           <TriangleAlert className="size-5" />
         </span>
         <div>
@@ -35,7 +35,7 @@ export function SyncBanner() {
     <Card className="relative overflow-hidden">
       <div className="relative z-10 flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2">
-          <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-container/20 text-primary-container">
+          <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-control bg-primary-container/20 text-primary-container">
             <Icon className="size-6" />
           </span>
           <div className="min-w-0">
@@ -77,7 +77,6 @@ export function SyncBanner() {
           Sincronizar
         </Button>
       </div>
-      <div aria-hidden className="pointer-events-none absolute -bottom-6 -right-6 size-28 rounded-full bg-primary/5 blur-2xl" />
     </Card>
   );
 }

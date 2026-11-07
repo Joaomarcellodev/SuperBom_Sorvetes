@@ -44,7 +44,7 @@ export function RouteSelector({
       </div>
 
       {routes.length === 0 ? (
-        <div className="rounded-2xl bg-surface-container-lowest p-4 text-center">
+        <div className="rounded-control bg-surface-container-lowest p-4 text-center">
           <p className="text-body-md text-on-surface-variant">Nenhuma rota cadastrada ainda.</p>
           <Button className="mt-3" size="sm" icon={<CirclePlus className="size-4" />} onClick={onNewRoute}>
             Criar primeira rota

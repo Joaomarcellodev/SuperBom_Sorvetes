@@ -155,7 +155,7 @@ export function SaleForm() {
                 value={saleDate}
                 max={todayStr()}
                 onChange={(e) => e.target.value && setSaleDate(e.target.value)}
-                className="mt-1 h-10 rounded-xl bg-surface-container-lowest px-3 text-[16px] text-on-surface outline-none [color-scheme:dark] focus:ring-2 focus:ring-secondary"
+                className="mt-1 h-10 rounded-control bg-surface-container-lowest px-3 text-[16px] text-on-surface outline-none [color-scheme:dark] focus:ring-2 focus:ring-secondary"
               />
             ) : (
               <p className="mt-1 text-label-lg text-on-surface">
@@ -191,7 +191,7 @@ export function SaleForm() {
           <span className="text-label-md uppercase text-on-surface-variant">Resumo da venda</span>
           {!isToday && <Badge tone="primary">Data alterada</Badge>}
         </div>
-        <div className="flex items-end justify-between gap-3 rounded-2xl bg-surface-container-lowest p-3">
+        <div className="flex items-end justify-between gap-3 rounded-control bg-surface-container-lowest p-3">
           <div>
             <span className="text-label-sm text-on-surface-variant">VOLUME TOTAL</span>
             <p className="tabular font-display text-metric-lg leading-none text-primary-container">

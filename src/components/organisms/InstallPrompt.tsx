@@ -51,7 +51,7 @@ export function InstallPrompt() {
           Instalar app
         </Button>
       ) : (
-        <p className="mt-4 flex items-start gap-2 rounded-2xl bg-surface-container-lowest p-3 text-body-sm text-on-surface-variant">
+        <p className="mt-4 flex items-start gap-2 rounded-control bg-surface-container-lowest p-3 text-body-sm text-on-surface-variant">
           <Share className="mt-0.5 size-4 shrink-0 text-secondary" />
           <span>
             No iPhone: toque em <strong className="text-on-surface">Compartilhar</strong> e depois em{" "}

@@ -20,8 +20,8 @@ export function Banner({
 }) {
   const t = tones[tone];
   return (
-    <div role={tone === "error" ? "alert" : undefined} className={cn("flex items-center gap-3 rounded-2xl p-3", t.box)}>
-      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-full [&_svg]:size-[22px]", t.icon)}>{icon}</span>
+    <div role={tone === "error" ? "alert" : undefined} className={cn("flex items-center gap-3 rounded-control p-3", t.box)}>
+      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-control [&_svg]:size-[22px]", t.icon)}>{icon}</span>
       <div className="min-w-0">
         <p className={cn("text-label-md font-bold", t.title)}>{title}</p>
         {children && <p className="mt-0.5 text-body-sm leading-snug text-on-surface-variant">{children}</p>}

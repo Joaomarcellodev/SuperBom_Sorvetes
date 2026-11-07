@@ -53,7 +53,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="pb-safe relative flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl bg-surface-container-high p-5 shadow-card outline-none ring-1 ring-secondary/25 sm:rounded-3xl"
+        className="pb-safe relative flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-card bg-surface-container-high p-5 shadow-card outline-none ring-1 ring-secondary/25 sm:rounded-card"
       >
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 id={titleId} className="font-display text-headline-md">{title}</h2>
