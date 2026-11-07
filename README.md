@@ -29,6 +29,8 @@ npm run build && npm start         # abre em http://localhost:3000
 | `0001_init.sql` | `sellers`, `routes`, `route_points`, `sales`, gatilhos e políticas RLS |
 | `0002_seller_avatar.sql` | coluna `sellers.avatar_url` (foto do perfil); a chave do app só pode alterar a foto |
 | `0003_finance.sql` | `product_prices`, `expenses` e o valor das vendas (`unit_prices`, `amount_cents`) |
+| `0004_route_soft_delete.sql` | `routes.deleted_at`: excluir rota sem perder as vendas dela (dá para restaurar) |
+| `0005_seller_role_edit.sql` | libera o app para editar o **cargo** do sócio (nome e PIN continuam só pelo SQL) |
 
    Todos podem ser rodados de novo sem estragar nada. Se faltar uma migração, o app avisa
    "Banco desatualizado" e continua sincronizando os pacotes.
@@ -90,6 +92,6 @@ Tokens (cores, tipografia, raios `card`/`control`/`chip`, cores dos gráficos) e
 ## Limites conhecidos
 
 - **Segurança do banco:** o app usa a chave `anon` e as políticas RLS liberam leitura/escrita para ela. Quem tiver a URL + chave consegue ler e gravar vendas. O **PIN é só um bloqueio de tela** (hash SHA-256 conferido no aparelho). Próximo passo recomendado: Supabase Auth + políticas `to authenticated`.
-- Não há **editar** venda nem gasto (apague e registre de novo).
+- Não há **editar** venda nem gasto (apague e registre de novo). Rotas podem ser editadas, excluídas e restauradas em **Ajustes → Rotas**.
 - Primeira abertura de cada aparelho precisa de internet (para baixar os perfis).
 - Para instalar e usar offline, o site precisa estar em **HTTPS** (ou localhost).
