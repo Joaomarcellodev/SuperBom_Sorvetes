@@ -48,10 +48,17 @@ export function AppHeader() {
       <ConfirmDialog
         open={confirmOut}
         title="Sair da conta?"
+        icon={<LogOut />}
+        details={
+          <span className="flex items-center justify-center gap-2">
+            <Avatar name={seller?.name ?? ""} photo={seller?.avatarUrl} size="sm" className="size-6 text-[10px]" />
+            {seller?.name}
+          </span>
+        }
         description={
           waiting > 0
-            ? `Você vai voltar para a escolha de conta. ${pending.sales} ${pending.sales === 1 ? "venda pendente continua" : "vendas pendentes continuam"} guardada${pending.sales === 1 ? "" : "s"} neste aparelho e ${pending.sales === 1 ? "será enviada" : "serão enviadas"} normalmente.`
-            : "Você vai voltar para a escolha de conta e poderá entrar com outro perfil."
+            ? `Você volta para a escolha de conta. ${pending.sales === 1 ? "A venda pendente fica" : `As ${pending.sales} vendas pendentes ficam`} no aparelho e ${pending.sales === 1 ? "sobe" : "sobem"} normalmente.`
+            : "Você volta para a escolha de conta e pode entrar com outro perfil."
         }
         confirmLabel="Sair"
         onConfirm={() => {

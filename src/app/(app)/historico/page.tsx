@@ -68,12 +68,13 @@ export default function HistoryPage() {
         open={toDelete !== null}
         danger
         title="Apagar esta venda?"
-        description={
+        details={
           toDelete
-            ? `${toDelete.total} ${toDelete.total === 1 ? "pacote" : "pacotes"}${toDelete.pointName ? ` em ${toDelete.pointName}` : ""}. A venda some do histórico e dos totais dos dois aparelhos.`
-            : ""
+            ? `${toDelete.total} ${toDelete.total === 1 ? "pacote" : "pacotes"}${toDelete.pointName ? ` · ${toDelete.pointName}` : ""}`
+            : null
         }
-        confirmLabel="Apagar venda"
+        description="Some do histórico e dos totais nos dois aparelhos."
+        confirmLabel="Apagar"
         onConfirm={() => void confirmDelete()}
         onCancel={() => setToDelete(null)}
       />

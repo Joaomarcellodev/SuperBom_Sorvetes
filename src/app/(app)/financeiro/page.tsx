@@ -183,8 +183,9 @@ export default function FinancePage() {
         open={toDelete !== null}
         danger
         title="Apagar este gasto?"
-        description={toDelete ? `${toDelete.description} · ${formatMoney(toDelete.amountCents)}. Some do financeiro dos dois aparelhos.` : ""}
-        confirmLabel="Apagar gasto"
+        details={toDelete ? `${toDelete.description} · ${formatMoney(toDelete.amountCents)}` : null}
+        description="Some do financeiro nos dois aparelhos."
+        confirmLabel="Apagar"
         onConfirm={() => void confirmDelete()}
         onCancel={() => setToDelete(null)}
       />
