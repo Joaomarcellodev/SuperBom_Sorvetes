@@ -1,23 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
 import { Avatar } from "../atoms/Avatar";
-import { IconButton } from "../atoms/IconButton";
 import { Logo } from "../atoms/Logo";
-import { ConfirmDialog } from "../molecules/ConfirmDialog";
 import { SyncStatusBadge } from "../molecules/SyncStatusBadge";
-import { useLogout } from "@/hooks/useLogout";
 import { useSession } from "@/providers/SessionProvider";
 import { useSync } from "@/providers/SyncProvider";
 
+/** Topo fixo: logo + status à esquerda; cargo, nome e foto à direita (abre o perfil em Ajustes). */
 export function AppHeader() {
   const { seller } = useSession();
-  const { online, syncing, pending } = useSync();
-  const logout = useLogout();
-  const [confirmOut, setConfirmOut] = useState(false);
-  const waiting = pending.sales + pending.other;
+  const { online, syncing } = useSync();
 
   return (
     <header className="pt-safe fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-surface-container-lowest/90 backdrop-blur-xl">
@@ -27,46 +20,19 @@ export function AppHeader() {
           <SyncStatusBadge online={online} syncing={syncing} compact />
         </Link>
         {seller && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <Link
-              href="/ajustes"
-              aria-label="Abrir meu perfil e ajustes"
-              className="flex items-center gap-2 rounded-control py-1 pl-2 pr-1 transition-colors hover:bg-surface-container-high"
-            >
-              <span className="hidden flex-col items-end min-[360px]:flex">
-                <span className="max-w-32 truncate text-label-sm leading-none text-on-surface-variant">{seller.role}</span>
-                <span className="max-w-28 truncate text-label-md font-bold leading-tight text-on-surface">{seller.name}</span>
-              </span>
-              <Avatar name={seller.name} photo={seller.avatarUrl} size="sm" />
-            </Link>
-            <IconButton label="Sair da conta" className="size-10" onClick={() => setConfirmOut(true)}>
-              <LogOut className="size-5" />
-            </IconButton>
-          </div>
+          <Link
+            href="/ajustes"
+            aria-label="Abrir meu perfil e ajustes"
+            className="flex shrink-0 items-center gap-2 rounded-control py-1 pl-2 pr-1 transition-colors hover:bg-surface-container-high"
+          >
+            <span className="hidden flex-col items-end min-[360px]:flex">
+              <span className="max-w-40 truncate text-label-sm leading-none text-on-surface-variant">{seller.role}</span>
+              <span className="max-w-36 truncate text-label-md font-bold leading-tight text-on-surface">{seller.name}</span>
+            </span>
+            <Avatar name={seller.name} photo={seller.avatarUrl} size="sm" />
+          </Link>
         )}
       </div>
-      <ConfirmDialog
-        open={confirmOut}
-        title="Sair da conta?"
-        icon={<LogOut />}
-        details={
-          <span className="flex items-center justify-center gap-2">
-            <Avatar name={seller?.name ?? ""} photo={seller?.avatarUrl} size="sm" className="size-6 text-[10px]" />
-            {seller?.name}
-          </span>
-        }
-        description={
-          waiting > 0
-            ? `Você volta para a escolha de conta. ${pending.sales === 1 ? "A venda pendente fica" : `As ${pending.sales} vendas pendentes ficam`} no aparelho e ${pending.sales === 1 ? "sobe" : "sobem"} normalmente.`
-            : "Você volta para a escolha de conta e pode entrar com outro perfil."
-        }
-        confirmLabel="Sair"
-        onConfirm={() => {
-          setConfirmOut(false);
-          logout();
-        }}
-        onCancel={() => setConfirmOut(false)}
-      />
     </header>
   );
 }

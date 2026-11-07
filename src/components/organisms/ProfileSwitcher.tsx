@@ -8,7 +8,7 @@ import { IconButton } from "../atoms/IconButton";
 import { Input } from "../atoms/Input";
 import { AvatarPicker } from "../molecules/AvatarPicker";
 import { ChangePinModal } from "./ChangePinModal";
-import { useLogout } from "@/hooks/useLogout";
+import { SignOutDialog } from "./SignOutDialog";
 import { photoToAvatar } from "@/lib/image";
 import { ROLE_MAX, updateSellerAvatar, updateSellerRole } from "@/lib/repo";
 import { useSession } from "@/providers/SessionProvider";
@@ -20,11 +20,11 @@ export function ProfileSwitcher() {
   const { seller } = useSession();
   const { syncNow, online } = useSync();
   const { toast } = useToast();
-  const logout = useLogout();
   const [editingRole, setEditingRole] = useState(false);
   const [roleDraft, setRoleDraft] = useState("");
   const [roleError, setRoleError] = useState<string | null>(null);
   const [pinOpen, setPinOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
   if (!seller) return null;
 
   const startRoleEdit = () => {
@@ -118,10 +118,11 @@ export function ProfileSwitcher() {
         <Button variant="soft" fullWidth icon={<KeyRound className="size-5 text-secondary" />} onClick={() => setPinOpen(true)}>
           Mudar PIN
         </Button>
-        <Button variant="soft" fullWidth icon={<LogOut className="size-5 text-primary" />} onClick={logout}>
+        <Button variant="soft" fullWidth icon={<LogOut className="size-5 text-primary" />} onClick={() => setSignOutOpen(true)}>
           Sair e entrar com outra conta
         </Button>
       </div>
+      <SignOutDialog open={signOutOpen} onClose={() => setSignOutOpen(false)} />
       <ChangePinModal
         open={pinOpen}
         sellerId={seller.id}
