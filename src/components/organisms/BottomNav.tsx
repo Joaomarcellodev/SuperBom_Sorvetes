@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ReceiptText, Settings, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, Plus, ReceiptText, Settings, Wallet } from "lucide-react";
 import { cn } from "@/lib/format";
 
 const ITEMS = [
-  { href: "/", label: "Início", icon: LayoutDashboard },
-  { href: "/registrar", label: "Registrar", icon: ShoppingCart, highlight: true },
+  { href: "/", label: "Painel", icon: LayoutDashboard },
   { href: "/historico", label: "Histórico", icon: ReceiptText },
+  { href: "/registrar", label: "Registrar", icon: Plus, highlight: true },
+  { href: "/financeiro", label: "Financeiro", icon: Wallet },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ] as const;
 
@@ -17,30 +18,31 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="pb-safe fixed inset-x-0 bottom-0 z-50 bg-surface-container-lowest/90 shadow-[0_-8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+      className="pb-safe fixed inset-x-0 bottom-0 z-50 border-t border-white/5 bg-surface-container-lowest/95 backdrop-blur-xl"
     >
-      <ul className="mx-auto flex h-16 w-full max-w-xl items-center justify-around px-1">
+      <ul className="mx-auto grid h-16 w-full max-w-xl grid-cols-5 items-center px-1">
         {ITEMS.map(({ href, label, icon: Icon, ...rest }) => {
           const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
           const highlight = "highlight" in rest;
           return (
-            <li key={href}>
+            <li key={href} className="flex justify-center">
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-12 min-w-16 flex-col items-center justify-center px-2 transition-colors",
-                  active ? "font-bold text-primary-container" : "text-on-surface-variant hover:text-on-surface",
+                  "relative flex min-h-12 w-full flex-col items-center justify-center gap-0.5 px-1 transition-colors",
+                  active ? "text-primary-container" : "text-on-surface-variant hover:text-on-surface",
                 )}
               >
                 {highlight ? (
-                  <span className="-mt-4 flex size-11 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-glow-primary-lg">
-                    <Icon className="size-6" />
+                  <span className="flex h-9 w-12 items-center justify-center rounded-control bg-primary-container text-on-primary-container shadow-glow-primary">
+                    <Icon className="size-6" strokeWidth={2.5} />
                   </span>
                 ) : (
-                  <Icon className="size-6" />
+                  <Icon className="size-[22px]" />
                 )}
-                <span className={cn("mt-0.5 text-label-sm", highlight && "text-primary-container")}>{label}</span>
+                <span className={cn("text-[11px] leading-none", active ? "font-bold" : "font-medium")}>{label}</span>
+                {active && !highlight && <span aria-hidden className="absolute top-0 h-0.5 w-8 rounded-b bg-primary-container" />}
               </Link>
             </li>
           );

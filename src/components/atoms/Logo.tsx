@@ -1,24 +1,36 @@
-import { IceCreamCone } from "lucide-react";
 import { cn } from "@/lib/format";
 
-/** Marca provisória (ícone + nome). Troque por o seu logo oficial em /public quando tiver o arquivo. */
-export function Logo({ size = "md", showName = true, className }: { size?: "md" | "lg"; showName?: boolean; className?: string }) {
+/** Logos com fundo transparente geradas por scripts/generate-icons.mjs a partir de public/logo.png. */
+const VARIANTS = {
+  /** só "Maxbono Sorvetes": cabeçalho e lugares pequenos */
+  compact: { src: "/brand/logo-compact.webp", ratio: 533 / 210 },
+  /** marca completa com picolés e "Distribuidora": login, splash, destaques */
+  full: { src: "/brand/logo-full.webp", ratio: 534 / 347 },
+} as const;
+
+/** Marca oficial da Maxbono Sorvetes. `height` em px; a largura acompanha a proporção. */
+export function Logo({
+  variant = "compact",
+  height = 32,
+  className,
+}: {
+  variant?: keyof typeof VARIANTS;
+  height?: number;
+  className?: string;
+}) {
+  const v = VARIANTS[variant];
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-2", className)}>
-      <span
-        aria-hidden
-        className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-xl bg-primary-container text-on-primary-container shadow-glow-primary",
-          size === "md" ? "size-9" : "size-16 rounded-3xl",
-        )}
-      >
-        <IceCreamCone className={size === "md" ? "size-5" : "size-9"} />
-      </span>
-      {showName && (
-        <span className={cn("truncate font-display text-primary", size === "md" ? "text-headline-sm" : "text-headline-xl")}>
-          Superbom
-        </span>
-      )}
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element -- imagem estática pequena, também guardada pelo service worker
+    <img
+      src={v.src}
+      alt="Maxbono Sorvetes"
+      width={Math.round(height * v.ratio)}
+      height={height}
+      decoding="async"
+      draggable={false}
+      // Altura via variável CSS: quem usa pode trocar com uma classe (ex.: em telas baixas).
+      className={cn("h-[var(--logo-h)] w-auto shrink-0 select-none object-contain", className)}
+      style={{ ["--logo-h" as string]: `${height}px` }}
+    />
   );
 }

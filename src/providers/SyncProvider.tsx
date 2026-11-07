@@ -34,6 +34,10 @@ const friendlyError = (e: unknown): string => {
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
     return "Sem conexão com o servidor. Tentaremos de novo.";
   }
+  // Coluna/tabela nova que ainda não existe no Supabase.
+  if (/schema cache|does not exist|PGRST20[45]|permission denied/i.test(msg)) {
+    return "Banco desatualizado: rode no SQL Editor do Supabase os arquivos novos de supabase/migrations.";
+  }
   return msg;
 };
 
@@ -64,7 +68,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       return;
     }
     // Offline não é erro: as vendas ficam no aparelho e a tela já mostra "Offline".
-    if (!navigator.onLine) return;
+    if (navigator.onLine === false) return;
     // Se já tem uma sincronização rodando, pede uma segunda rodada em vez de perder o pedido
     // (acontece quando a venda é salva no meio de um envio).
     if (running.current) {
@@ -90,7 +94,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
+    setOnline(navigator.onLine !== false);
     const goOnline = () => {
       setOnline(true);
       void syncNow();

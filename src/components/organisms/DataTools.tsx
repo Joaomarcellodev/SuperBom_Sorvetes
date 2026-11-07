@@ -24,7 +24,7 @@ export function DataTools() {
 
   const exportCsv = () => {
     if (!sales || !routes || !sellers) return;
-    downloadTextFile(`superbom-vendas-${todayStr()}.csv`, buildSalesCsv(sales, routes, sellers), "text/csv");
+    downloadTextFile(`maxbono-vendas-${todayStr()}.csv`, buildSalesCsv(sales, routes, sellers), "text/csv");
     toast({ title: "Planilha gerada", description: "O arquivo CSV abre direto no Excel." });
   };
 
@@ -77,7 +77,9 @@ export function DataTools() {
         open={confirmPurge}
         danger
         title="Limpar histórico antigo?"
-        description={`Remove deste aparelho as vendas com mais de ${KEEP_DAYS} dias que já foram enviadas ao servidor. Elas continuam salvas no Supabase.`}
+        icon={<Eraser />}
+        details={`Vendas com mais de ${KEEP_DAYS} dias, já sincronizadas`}
+        description="Saem só deste aparelho. Continuam salvas no servidor."
         confirmLabel="Limpar"
         onConfirm={() => void purge()}
         onCancel={() => setConfirmPurge(false)}

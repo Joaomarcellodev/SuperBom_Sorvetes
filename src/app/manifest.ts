@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Superbom Sorvetes",
-    short_name: "Superbom",
+    name: "Maxbono Sorvetes",
+    short_name: "Maxbono",
     description: "Registro offline de pacotes de sorvete vendidos por rota.",
     lang: "pt-BR",
     start_url: "/",
@@ -22,6 +22,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: "Registrar venda", short_name: "Registrar", url: "/registrar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
       { name: "Histórico", url: "/historico", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Financeiro", url: "/financeiro", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
     ],
   };
 }

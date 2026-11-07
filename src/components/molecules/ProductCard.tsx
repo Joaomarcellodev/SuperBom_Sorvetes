@@ -22,7 +22,7 @@ export function ProductCard({ product, qty, onChange }: { product: Product; qty:
               tick();
               onChange(0);
             }}
-            className="rounded-full px-3 py-2 text-label-md text-secondary hover:bg-surface-container-high"
+            className="rounded-control px-3 py-2 text-label-md text-secondary hover:bg-surface-container-high"
           >
             Zerar
           </button>
@@ -42,7 +42,7 @@ export function ProductCard({ product, qty, onChange }: { product: Product; qty:
               tick();
               onChange(qty + n);
             }}
-            className="h-11 flex-1 rounded-xl bg-surface-container-high text-label-lg transition-transform hover:bg-surface-variant active:scale-95"
+            className="h-11 flex-1 rounded-control bg-surface-container-high text-label-lg transition-transform hover:bg-surface-variant active:scale-95"
           >
             +{n}
           </button>

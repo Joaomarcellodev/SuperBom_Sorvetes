@@ -1,7 +1,9 @@
 "use client";
 
 import { useId } from "react";
-import { CirclePlus, MapPin, Route as RouteIcon, Store, Truck } from "lucide-react";
+import Link from "next/link";
+import { CirclePlus, MapPin, Pencil, Route as RouteIcon, Store, Truck } from "lucide-react";
+import { IconButton } from "../atoms/IconButton";
 import { Button } from "../atoms/Button";
 import { Card } from "../atoms/Card";
 import { Input } from "../atoms/Input";
@@ -18,6 +20,7 @@ export function RouteSelector({
   pointName,
   onPointChange,
   onNewRoute,
+  onEditRoute,
 }: {
   routes: Route[];
   routeId: string;
@@ -25,6 +28,7 @@ export function RouteSelector({
   pointName: string;
   onPointChange: (name: string) => void;
   onNewRoute: () => void;
+  onEditRoute: () => void;
 }) {
   const listId = useId();
   const selectId = useId();
@@ -44,7 +48,7 @@ export function RouteSelector({
       </div>
 
       {routes.length === 0 ? (
-        <div className="rounded-2xl bg-surface-container-lowest p-4 text-center">
+        <div className="rounded-control bg-surface-container-lowest p-4 text-center">
           <p className="text-body-md text-on-surface-variant">Nenhuma rota cadastrada ainda.</p>
           <Button className="mt-3" size="sm" icon={<CirclePlus className="size-4" />} onClick={onNewRoute}>
             Criar primeira rota
@@ -52,13 +56,24 @@ export function RouteSelector({
         </div>
       ) : (
         <>
-          <Select id={selectId} icon={<Truck />} value={routeId} onChange={(e) => onRouteChange(e.target.value)}>
-            {routes.map((r) => (
-              <option key={r.id} value={r.id} className="bg-surface-container text-on-surface">
-                {r.name}
-              </option>
-            ))}
-          </Select>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <Select id={selectId} icon={<Truck />} value={routeId} onChange={(e) => onRouteChange(e.target.value)}>
+                {routes.map((r) => (
+                  <option key={r.id} value={r.id} className="bg-surface-container text-on-surface">
+                    {r.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <IconButton label="Editar esta rota" onClick={onEditRoute} disabled={!route}>
+              <Pencil className="size-5" />
+            </IconButton>
+          </div>
+
+          <Link href="/ajustes#rotas" className="inline-block text-label-sm text-secondary hover:underline">
+            Gerenciar ou excluir rotas
+          </Link>
 
           {route && route.cities.length > 0 && (
             <p className="flex items-center gap-1.5 text-label-sm text-on-surface-variant">

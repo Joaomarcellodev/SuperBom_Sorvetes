@@ -5,10 +5,7 @@ export function PinDots({ length, total = 4, state = "idle" }: { length: number;
     <div
       role="img"
       aria-label={`${length} de ${total} dígitos`}
-      className={cn(
-        "flex items-center justify-center gap-4 rounded-2xl bg-surface-container-lowest py-4",
-        state === "error" && "animate-shake",
-      )}
+      className={cn("flex items-center justify-center gap-5 py-2", state === "error" && "animate-shake")}
     >
       {Array.from({ length: total }, (_, i) => {
         const filled = i < length;
@@ -16,11 +13,11 @@ export function PinDots({ length, total = 4, state = "idle" }: { length: number;
           <span
             key={i}
             className={cn(
-              "size-4 rounded-full transition-all duration-150",
-              !filled && "bg-surface-variant",
-              filled && state === "idle" && "scale-110 bg-primary-container shadow-glow-primary",
-              filled && state === "error" && "bg-error",
-              filled && state === "success" && "bg-secondary",
+              "size-4 rounded-full ring-2 transition-all duration-150",
+              !filled && "bg-transparent ring-on-surface-variant/50",
+              filled && state === "idle" && "scale-110 bg-primary-container ring-primary-container shadow-glow-primary",
+              filled && state === "error" && "bg-error ring-error",
+              filled && state === "success" && "bg-secondary ring-secondary",
             )}
           />
         );

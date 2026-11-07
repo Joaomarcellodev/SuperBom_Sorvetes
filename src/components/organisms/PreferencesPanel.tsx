@@ -6,7 +6,7 @@ import { Toggle } from "../atoms/Toggle";
 import { SettingsRow } from "../molecules/SettingsRow";
 import { useSoundPref } from "@/lib/feedback";
 
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "1.0.0";
 
 export function PreferencesPanel() {
   const [sound, setSound] = useSoundPref();
@@ -24,7 +24,7 @@ export function PreferencesPanel() {
       />
       <div className="mt-2 flex flex-col items-center gap-1 pt-2 text-center">
         <span className="flex items-center gap-1.5 text-label-md font-bold">
-          <ShieldCheck className="size-4 text-secondary" /> Superbom PWA Offline
+          <ShieldCheck className="size-4 text-secondary" /> Maxbono Sorvetes · app offline
         </span>
         <span className="text-label-sm text-on-surface-variant">Versão {APP_VERSION}</span>
       </div>

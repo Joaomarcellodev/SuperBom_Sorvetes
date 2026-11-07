@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { cn } from "@/lib/format";
 import { Spinner } from "./Spinner";
 
@@ -11,6 +11,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
   loading?: boolean;
   fullWidth?: boolean;
+  /** React 19: ref chega como prop comum (ex.: focar "Cancelar" ao abrir uma confirmação) */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 const variants: Record<Variant, string> = {
@@ -19,7 +21,7 @@ const variants: Record<Variant, string> = {
   soft: "bg-surface-container-high text-on-surface hover:bg-surface-container-highest",
   outline: "border-2 border-secondary bg-transparent text-on-surface hover:bg-secondary/10",
   ghost: "bg-transparent text-secondary hover:bg-surface-container-high",
-  danger: "bg-error-container text-on-error-container hover:brightness-110",
+  danger: "bg-danger text-on-danger shadow-[0_4px_14px_rgba(217,61,66,0.3)] hover:brightness-110",
 };
 
 const sizes: Record<Size, string> = {
@@ -30,7 +32,7 @@ const sizes: Record<Size, string> = {
 
 export function buttonStyles(variant: Variant = "primary", size: Size = "md", fullWidth?: boolean, className?: string): string {
   return cn(
-    "inline-flex select-none items-center justify-center gap-2 rounded-full transition-all active:scale-[0.97]",
+    "inline-flex select-none items-center justify-center gap-2 rounded-control transition-all active:scale-[0.97]",
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:scale-100",
     variants[variant],
     sizes[size],

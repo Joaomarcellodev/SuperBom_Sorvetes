@@ -1,5 +1,5 @@
 import Dexie, { type Table } from "dexie";
-import type { MetaRow, Route, RoutePoint, Sale, Seller } from "./types";
+import type { Expense, MetaRow, ProductPrice, Route, RoutePoint, Sale, Seller } from "./types";
 
 /**
  * Banco local (IndexedDB). É a fonte da verdade da interface:
@@ -12,6 +12,8 @@ class SuperbomDB extends Dexie {
   points!: Table<RoutePoint, string>;
   sales!: Table<Sale, string>;
   meta!: Table<MetaRow, string>;
+  prices!: Table<ProductPrice, string>;
+  expenses!: Table<Expense, string>;
 
   constructor() {
     super("superbom");
@@ -21,6 +23,11 @@ class SuperbomDB extends Dexie {
       points: "id, routeId, [routeId+name], dirty",
       sales: "id, saleDate, routeId, sellerId, dirty, createdAt",
       meta: "key",
+    });
+    // v2: financeiro. Só adiciona tabelas; as vendas existentes continuam como estão.
+    this.version(2).stores({
+      prices: "productId, dirty",
+      expenses: "id, expenseDate, sellerId, dirty, createdAt",
     });
   }
 }
@@ -47,3 +54,4 @@ export async function setMeta(key: string, value: unknown): Promise<void> {
 
 export const META_LAST_SYNC = "lastSyncAt";
 export const META_SALES_CURSOR = "salesCursor";
+export const META_EXPENSES_CURSOR = "expensesCursor";

@@ -11,7 +11,7 @@ export function Input({ icon, invalid, className, ...props }: InputProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-2xl bg-surface-container-lowest px-3 transition-shadow focus-within:ring-2",
+        "flex items-center gap-2 rounded-control bg-surface-container-lowest px-3 transition-shadow focus-within:ring-2",
         invalid ? "ring-2 ring-error focus-within:ring-error" : "focus-within:ring-secondary",
       )}
     >

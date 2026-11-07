@@ -57,7 +57,7 @@ export function downloadTextFile(filename: string, content: string, mime: string
 export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[]): string {
   const day = sales.filter((s) => s.saleDate === dateStr);
   const total = day.reduce((acc, s) => acc + s.total, 0);
-  const lines = [`🍦 *Superbom — fechamento de ${formatShortDate(dateStr)}*`, "", `*Total: ${total} pacotes*`];
+  const lines = [`🍦 *Maxbono Sorvetes — fechamento de ${formatShortDate(dateStr)}*`, "", `*Total: ${total} pacotes*`];
 
   for (const p of PRODUCTS) {
     const qty = day.reduce((acc, s) => acc + (s.items[p.id] ?? 0), 0);

@@ -1,4 +1,4 @@
-/* Superbom Sorvetes — service worker (offline-first)
+/* Maxbono Sorvetes — service worker (offline-first)
  *
  * Objetivo: depois da primeira visita online, o app abre e funciona sem internet.
  *  - Páginas: rede primeiro (pega a versão nova), cache como reserva.
@@ -9,14 +9,14 @@
  * Os dados (vendas, rotas) NÃO passam por aqui: ficam no IndexedDB e sincronizam com o Supabase.
  * Mudou a lógica do cache? Aumente VERSION.
  */
-const VERSION = "v1";
-const STATIC_CACHE = `superbom-static-${VERSION}`;
-const PAGE_CACHE = `superbom-pages-${VERSION}`;
-const RSC_CACHE = `superbom-rsc-${VERSION}`;
+const VERSION = "v4";
+const STATIC_CACHE = `maxbono-static-${VERSION}`;
+const PAGE_CACHE = `maxbono-pages-${VERSION}`;
+const RSC_CACHE = `maxbono-rsc-${VERSION}`;
 const KEEP = [STATIC_CACHE, PAGE_CACHE, RSC_CACHE];
 
-const PAGES = ["/", "/login", "/registrar", "/historico", "/ajustes"];
-const EXTRA = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png"];
+const PAGES = ["/", "/login", "/registrar", "/historico", "/financeiro", "/ajustes"];
+const EXTRA = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/brand/logo-compact.webp", "/brand/logo-full.webp"];
 const NAV_TIMEOUT_MS = 4000;
 
 /* ---------- pré-cache ---------- */
@@ -91,7 +91,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const names = await caches.keys();
-      await Promise.all(names.filter((n) => n.startsWith("superbom-") && !KEEP.includes(n)).map((n) => caches.delete(n)));
+      await Promise.all(names.filter((n) => /^(superbom|maxbono)-/.test(n) && !KEEP.includes(n)).map((n) => caches.delete(n)));
       await self.clients.claim();
     })(),
   );
@@ -167,7 +167,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.pathname === "/sw.js") return;
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/brand/")) {
     event.respondWith(cacheFirst(request));
   } else if (request.mode === "navigate") {
     event.respondWith(networkFirstPage(request));

@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from "dexie-react-hooks";
 import { getDb } from "@/lib/db";
-import type { Route, RoutePoint, Sale, Seller } from "@/lib/types";
+import type { Expense, ProductPrice, Route, RoutePoint, Sale, Seller } from "@/lib/types";
 
 /**
  * Leituras reativas do banco local: a tela atualiza sozinha quando uma venda é salva
@@ -18,11 +18,31 @@ export function useSales(): Sale[] | undefined {
   }, []);
 }
 
+export function useExpenses(): Expense[] | undefined {
+  return useLiveQuery(async () => {
+    const all = await getDb().expenses.toArray();
+    return all
+      .filter((e) => !e.deletedAt)
+      .sort((a, b) => (a.expenseDate + a.createdAt < b.expenseDate + b.createdAt ? 1 : -1));
+  }, []);
+}
+
+export function usePrices(): ProductPrice[] | undefined {
+  return useLiveQuery(() => getDb().prices.toArray(), []);
+}
+
+/** Todas as rotas, inclusive excluídas: use para mostrar o nome da rota de vendas antigas e nos filtros. */
 export function useRoutes(): Route[] | undefined {
   return useLiveQuery(async () => {
     const all = await getDb().routes.toArray();
     return all.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }, []);
+}
+
+/** Só rotas ativas: use onde se escolhe a rota (registrar venda, gerenciar). */
+export function useActiveRoutes(): Route[] | undefined {
+  const all = useRoutes();
+  return all?.filter((r) => !r.deletedAt);
 }
 
 export function useSellers(): Seller[] | undefined {

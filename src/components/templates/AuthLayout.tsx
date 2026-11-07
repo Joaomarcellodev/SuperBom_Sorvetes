@@ -18,14 +18,16 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   }, [ready, seller, router]);
 
   return (
-    <main className="pb-safe pt-safe mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-3 py-6">
-      <header className="flex flex-col items-center gap-2 rounded-3xl bg-surface-container p-6 text-center shadow-card">
-        <Logo size="lg" showName={false} />
-        <h1 className="font-display text-headline-xl text-primary">Superbom Sorvetes</h1>
-        <p className="max-w-64 text-body-sm text-on-surface-variant">Registro de vendas por rota, com ou sem internet</p>
-        <SyncStatusBadge online={online} className="mt-1" />
-      </header>
-      {children}
+    <main className="login-bg relative min-h-dvh overflow-x-hidden">
+      <div className="pb-safe pt-safe relative mx-auto flex min-h-dvh w-full max-w-sm flex-col items-center justify-center gap-7 px-6 py-10 [@media(max-height:760px)]:gap-5 [@media(max-height:760px)]:py-6">
+        <header className="flex flex-col items-center gap-2 text-center">
+          <h1 className="sr-only">Maxbono Sorvetes</h1>
+          <Logo variant="full" height={132} className="drop-shadow-[0_10px_30px_rgba(0,8,54,0.7)] [@media(max-height:760px)]:h-24" />
+          <p className="text-body-sm text-on-surface-variant">Vendas por rota, com ou sem internet</p>
+          <SyncStatusBadge online={online} />
+        </header>
+        {children}
+      </div>
     </main>
   );
 }
