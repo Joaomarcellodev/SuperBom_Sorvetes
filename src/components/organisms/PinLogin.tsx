@@ -26,7 +26,6 @@ export function PinLogin() {
   const [pin, setPin] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [keep, setKeep] = useState(true);
-  const [showHelp, setShowHelp] = useState(false);
   const busy = useRef(false);
 
   // Seleciona o último perfil usado neste aparelho (ou o primeiro da lista).
@@ -130,20 +129,10 @@ export function PinLogin() {
         />
       </section>
 
-      <div className="flex w-full max-w-[18rem] items-center justify-between gap-3">
-        <label className="flex cursor-pointer items-center gap-2 text-body-sm text-on-surface">
-          <Toggle checked={keep} onChange={setKeep} label="Manter conectado" />
-          Manter conectado
-        </label>
-        <button type="button" onClick={() => setShowHelp((v) => !v)} className="text-label-sm text-secondary hover:underline">
-          Esqueceu o PIN?
-        </button>
-      </div>
-      {showHelp && (
-        <p className="w-full max-w-[18rem] rounded-control bg-surface-container-low p-3 text-center text-body-sm text-on-surface-variant">
-          Entre com o PIN antigo e troque em <b>Ajustes → Mudar PIN</b>. Se esqueceu de vez, o administrador redefine pelo SQL Editor do Supabase (veja o README).
-        </p>
-      )}
+      <label className="flex cursor-pointer items-center justify-center gap-2 text-body-sm text-on-surface">
+        <Toggle checked={keep} onChange={setKeep} label="Manter conectado" />
+        Manter conectado
+      </label>
 
       <p className="flex max-w-[18rem] items-center justify-center gap-1.5 text-center text-label-sm text-on-surface-variant">
         {online ? <Zap className="size-3.5 shrink-0 text-secondary" /> : <CloudOff className="size-3.5 shrink-0 text-primary" />}
