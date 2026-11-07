@@ -1,9 +1,12 @@
+import type { ReactNode } from "react";
 import { DataTable } from "./DataTable";
 
 export interface RankedRow {
   id: string;
   label: string;
   value: number;
+  /** ex.: foto do vendedor ao lado do nome */
+  leading?: ReactNode;
 }
 
 /**
@@ -28,7 +31,10 @@ export function RankedBars({
   const total = sorted.reduce((acc, r) => acc + r.value, 0);
   if (total <= 0) return <p className="py-4 text-center text-body-sm text-on-surface-variant">{emptyText}</p>;
 
-  const shown = sorted.length > limit ? [...sorted.slice(0, limit - 1), { id: "_others", label: "Outros", value: sorted.slice(limit - 1).reduce((a, r) => a + r.value, 0) }] : sorted;
+  const shown: RankedRow[] =
+    sorted.length > limit
+      ? [...sorted.slice(0, limit - 1), { id: "_others", label: "Outros", value: sorted.slice(limit - 1).reduce((a, r) => a + r.value, 0) }]
+      : sorted;
   const top = shown[0]?.value ?? 1;
   const pct = (v: number) => `${Math.round((v / total) * 100)}%`;
 
@@ -38,7 +44,10 @@ export function RankedBars({
         {shown.map((r) => (
           <li key={r.id} title={`${r.label}: ${format(r.value)} (${pct(r.value)})`}>
             <div className="mb-1 flex items-baseline justify-between gap-2">
-              <span className="truncate text-label-lg text-on-surface">{r.label}</span>
+              <span className="flex min-w-0 items-center gap-2">
+                {r.leading}
+                <span className="truncate text-label-lg text-on-surface">{r.label}</span>
+              </span>
               <span className="shrink-0 text-label-md text-on-surface">
                 <span className="tabular">{format(r.value)}</span>
                 <span className="ml-1.5 text-on-surface-variant">{pct(r.value)}</span>
