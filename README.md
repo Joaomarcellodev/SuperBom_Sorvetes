@@ -1,4 +1,4 @@
-# Superbom Sorvetes — PWA de vendas por rota
+# Maxbono Sorvetes — PWA de vendas por rota
 
 Registra **pacotes vendidos** (Picolé Simples, Picolé de Cobertura, Cremosinho) por **rota/região**, funciona **offline** e sincroniza com o **Supabase** entre os dois sócios.
 

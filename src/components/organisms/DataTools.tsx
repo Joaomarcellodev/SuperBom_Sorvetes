@@ -24,7 +24,7 @@ export function DataTools() {
 
   const exportCsv = () => {
     if (!sales || !routes || !sellers) return;
-    downloadTextFile(`superbom-vendas-${todayStr()}.csv`, buildSalesCsv(sales, routes, sellers), "text/csv");
+    downloadTextFile(`maxbono-vendas-${todayStr()}.csv`, buildSalesCsv(sales, routes, sellers), "text/csv");
     toast({ title: "Planilha gerada", description: "O arquivo CSV abre direto no Excel." });
   };
 

@@ -4,11 +4,11 @@ import { AppProviders } from "@/providers/AppProviders";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Superbom Sorvetes", template: "%s · Superbom" },
+  title: { default: "Maxbono Sorvetes", template: "%s · Maxbono" },
   description: "Registro offline de pacotes de sorvete vendidos por rota.",
-  applicationName: "Superbom",
+  applicationName: "Maxbono",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Superbom", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Maxbono", statusBarStyle: "black-translucent" },
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
