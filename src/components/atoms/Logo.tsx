@@ -1,24 +1,35 @@
 import { cn } from "@/lib/format";
 
-/** Proporção do recorte em public/brand/logo-wordmark.webp (560 × 347). */
-const RATIO = 560 / 347;
+/** Logos com fundo transparente geradas por scripts/generate-icons.mjs a partir de public/logo.png. */
+const VARIANTS = {
+  /** só "Maxbono Sorvetes": cabeçalho e lugares pequenos */
+  compact: { src: "/brand/logo-compact.webp", ratio: 533 / 210 },
+  /** marca completa com picolés e "Distribuidora": login, splash, destaques */
+  full: { src: "/brand/logo-full.webp", ratio: 534 / 347 },
+} as const;
 
-const heights = { sm: 36, md: 44, lg: 112 } as const;
-
-/** Marca oficial da Maxbono Sorvetes (recorte da arte em public/logo.png). */
-export function Logo({ size = "md", className }: { size?: keyof typeof heights; className?: string }) {
-  const height = heights[size];
+/** Marca oficial da Maxbono Sorvetes. `height` em px; a largura acompanha a proporção. */
+export function Logo({
+  variant = "compact",
+  height = 32,
+  className,
+}: {
+  variant?: keyof typeof VARIANTS;
+  height?: number;
+  className?: string;
+}) {
+  const v = VARIANTS[variant];
   return (
     // eslint-disable-next-line @next/next/no-img-element -- imagem estática pequena, também guardada pelo service worker
     <img
-      src="/brand/logo-wordmark.webp"
+      src={v.src}
       alt="Maxbono Sorvetes"
-      width={Math.round(height * RATIO)}
+      width={Math.round(height * v.ratio)}
       height={height}
       decoding="async"
-      className={cn("shrink-0 select-none rounded-md object-contain", className)}
-      style={{ height, width: "auto" }}
       draggable={false}
+      className={cn("shrink-0 select-none object-contain", className)}
+      style={{ height, width: "auto" }}
     />
   );
 }

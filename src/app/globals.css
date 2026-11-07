@@ -46,6 +46,10 @@
   --color-viz-in: #199e70;
   --color-viz-out: #d95926;
   --color-viz-grid: #29325e;
+  /* Uma cor por produto (mesma ordem de PRODUCTS; validada também como trio). */
+  --color-product-simples: #c98500;
+  --color-product-cobertura: #d55181;
+  --color-product-cremosinho: #3987e5;
 
   --font-display: "Nunito Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
@@ -156,6 +160,15 @@
     outline: 2px solid var(--color-secondary);
     outline-offset: 2px;
   }
+}
+
+/* Fundo de destaque da marca: azul profundo com brilho âmbar no canto (combina com a arte da logo). */
+@utility brand-hero {
+  background-color: #0f1a52;
+  background-image:
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 180, 0, 0.16), transparent 55%),
+    radial-gradient(90% 80% at 0% 100%, rgba(57, 135, 229, 0.22), transparent 60%),
+    linear-gradient(165deg, #1b2a78 0%, #101a4f 55%, #0a1340 100%);
 }
 
 @utility pb-safe {

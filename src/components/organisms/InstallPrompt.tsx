@@ -26,7 +26,7 @@ export function InstallPrompt() {
   return (
     <Card className="bg-gradient-to-br from-surface-container-high via-surface-container to-surface-container-lowest">
       <div className="flex items-start gap-3">
-        <Logo size="sm" />
+        <Logo variant="full" height={52} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-headline-sm text-primary">Instalar no celular</h2>

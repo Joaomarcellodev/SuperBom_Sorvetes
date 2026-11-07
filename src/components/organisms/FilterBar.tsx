@@ -44,12 +44,12 @@ export function FilterBar({
             onClick={() => setOpen(true)}
             aria-label={extra ? `Filtros (${extra} ativos)` : "Filtros"}
             className={cn(
-              "relative flex h-10 shrink-0 items-center gap-1.5 rounded-control px-3 text-label-md font-bold transition-colors",
+              "relative flex h-10 shrink-0 items-center gap-1.5 rounded-control px-2.5 text-label-md font-bold transition-colors",
               extra ? "bg-secondary/15 text-secondary" : "bg-surface-container-high text-on-surface hover:bg-surface-container-highest",
             )}
           >
             <SlidersHorizontal className="size-4" />
-            Filtros
+            <span className="hidden min-[400px]:inline">Filtros</span>
             {extra > 0 && (
               <span className="flex size-5 items-center justify-center rounded-full bg-secondary text-[11px] text-on-secondary">{extra}</span>
             )}

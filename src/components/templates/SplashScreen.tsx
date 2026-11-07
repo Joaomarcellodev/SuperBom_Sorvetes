@@ -4,7 +4,7 @@ export function SplashScreen() {
   return (
     <div role="status" aria-label="Carregando" className="flex min-h-dvh items-center justify-center">
       <div className="animate-pulse">
-        <Logo size="lg" />
+        <Logo variant="full" height={150} />
       </div>
     </div>
   );

@@ -3,21 +3,22 @@
 import Link from "next/link";
 import { ChevronRight, ShoppingCart } from "lucide-react";
 import { ButtonLink } from "../atoms/ButtonLink";
+import { Card } from "../atoms/Card";
 import { Skeleton } from "../atoms/Skeleton";
 import { EmptyState } from "../molecules/EmptyState";
-import { SaleListItem } from "../molecules/SaleListItem";
+import { SaleRow } from "../molecules/SaleRow";
 import { SectionHeader } from "../molecules/SectionHeader";
-import { useRoutes, useSales, useSellers } from "@/hooks/useData";
-import { useSession } from "@/providers/SessionProvider";
+import { usePrices, useRoutes, useSales, useSellers } from "@/hooks/useData";
+import { priceMap, saleAmount } from "@/lib/finance";
+import { formatMoney } from "@/lib/money";
 
-export function RecentSales() {
+export function RecentSales({ limit = 5 }: { limit?: number }) {
   const sales = useSales();
   const routes = useRoutes();
   const sellers = useSellers();
-  const { seller } = useSession();
-
+  const prices = usePrices();
+  const defaults = priceMap(prices);
   const routeName = (id: string) => routes?.find((r) => r.id === id)?.name ?? "Rota removida";
-  const sellerName = (id: string) => sellers?.find((s) => s.id === id)?.name ?? "—";
 
   return (
     <section className="space-y-2" aria-label="Últimas vendas">
@@ -30,26 +31,31 @@ export function RecentSales() {
         }
       />
       {sales === undefined ? (
-        <Skeleton className="h-28" />
+        <Skeleton className="h-40" />
       ) : sales.length === 0 ? (
         <EmptyState
           icon={<ShoppingCart />}
           title="Nenhuma venda ainda"
           description="Registre a primeira venda do dia. Funciona mesmo sem internet."
-          action={
-            <ButtonLink href="/registrar" size="sm">Registrar venda</ButtonLink>
-          }
+          action={<ButtonLink href="/registrar" size="sm">Registrar venda</ButtonLink>}
         />
       ) : (
-        sales.slice(0, 3).map((sale) => (
-          <SaleListItem
-            key={sale.id}
-            sale={sale}
-            routeName={routeName(sale.routeId)}
-            sellerName={sellerName(sale.sellerId)}
-            isMine={sale.sellerId === seller?.id}
-          />
-        ))
+        <Card>
+          <ul className="divide-y divide-white/[0.06]">
+            {sales.slice(0, limit).map((sale) => {
+              const value = saleAmount(sale, defaults);
+              return (
+                <SaleRow
+                  key={sale.id}
+                  sale={sale}
+                  routeName={routeName(sale.routeId)}
+                  seller={sellers?.find((s) => s.id === sale.sellerId)}
+                  amount={value > 0 ? formatMoney(value) : ""}
+                />
+              );
+            })}
+          </ul>
+        </Card>
       )}
     </section>
   );

@@ -26,7 +26,7 @@ export function SegmentedControl<T extends string>({
             aria-checked={active}
             onClick={() => onChange(o.id)}
             className={cn(
-              "h-9 min-w-0 flex-1 truncate rounded-chip px-2 text-label-md font-bold transition-colors",
+              "h-9 min-w-0 flex-1 truncate rounded-chip px-1 text-label-md font-bold transition-colors",
               active ? "bg-primary-container text-on-primary-container" : "text-on-surface-variant hover:text-on-surface",
             )}
           >
