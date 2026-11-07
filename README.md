@@ -1,98 +1,137 @@
-# Maxbono Sorvetes — PWA de vendas por rota
+<div align="center">
 
-Registra **pacotes vendidos** (Picolé Simples, Picolé de Cobertura, Cremosinho) por **rota/região**, funciona **offline** e sincroniza com o **Supabase** entre os dois sócios.
+<img src="public/logo.png" alt="Maxbono Sorvetes" width="240" />
 
-Telas: **Painel** (gráficos e indicadores), **Histórico**, **Registrar**, **Financeiro** (entradas, gastos e saldo) e **Ajustes** (foto do perfil, sincronização, exportar).
+# Maxbono Sorvetes
 
-Stack: Next.js (App Router) · React · TypeScript · Tailwind CSS v4 · Atomic Design · PWA · Dexie (IndexedDB) · Supabase.
+**App de vendas por rota para distribuidora de sorvetes, feito para funcionar na rua, com ou sem internet.**
 
-## Rodar
+Cada sócio registra os pacotes vendidos no celular, acompanha o desempenho e o financeiro da distribuidora, e tudo se sincroniza sozinho entre os aparelhos.
 
-```bash
-npm install
-cp .env.local.example .env.local   # preencha URL e publishable key do Supabase
-npm run dev                        # desenvolvimento (service worker desligado)
+![Next.js](https://img.shields.io/badge/Next.js_16-000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React_19-149eca?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06b6d4?logo=tailwindcss&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ecf8e?logo=supabase&logoColor=white)
+![PWA](https://img.shields.io/badge/PWA-offline--first-5a0fc8?logo=pwa&logoColor=white)
+![Testes](https://img.shields.io/badge/testes-36_passando-2ea44f?logo=vitest&logoColor=white)
+
+</div>
+
+---
+
+## Por que existe
+
+Quem vende sorvete por rota passa o dia em mercadinhos, bares e cidades vizinhas, muitas vezes **sem sinal**. Anotar no papel e somar no fim do dia gera erro e retrabalho. Este app troca o caderno por um registro rápido no celular, pensado para usar com uma mão, de pé, no sol ou na câmara fria:
+
+- **Offline de verdade:** a venda é salva no aparelho na hora e sobe sozinha quando a internet volta.
+- **Poucos toques:** contador grande por produto, atalhos +5 / +10 / +20, rota e cliente lembrados.
+- **Dois sócios, um só número:** o que um registra aparece para o outro, sem planilha no meio.
+
+## Funcionalidades
+
+### 📊 Painel
+- Destaque do dia: pacotes vendidos, faturamento e vendas, com a variação em relação a ontem.
+- Filtros de período (hoje, 7 dias, mês, tudo), rota e vendedor.
+- Gráfico de pacotes por hora, dia ou mês; mix de produtos; ranking de rotas e de vendedores.
+- Últimas vendas com foto de quem vendeu.
+
+### 🧾 Registro de venda
+- Rota e cliente/ponto (com autocompletar dos pontos já atendidos).
+- Quantidade por produto: Picolé Simples, Picolé de Cobertura e Cremosinho.
+- Valor calculado pelo preço padrão, com ajuste só para aquela venda (cliente com desconto, por exemplo).
+- Data ajustável e observação.
+
+### 💰 Financeiro
+- Saldo do período: quanto entrou com as vendas, quanto saiu com gastos.
+- Gráfico de entradas × saídas e gastos por categoria (combustível, reposição, manutenção…).
+- Registro de gastos com valor, descrição, categoria, data e quem pagou.
+- Tabela de preços por pacote compartilhada entre os sócios.
+
+### 🗂️ Histórico e dados
+- Vendas agrupadas por dia, com filtros e exclusão.
+- Exportação para **Excel/CSV** e resumo do fechamento do dia pronto para o **WhatsApp**.
+
+### 👤 Perfil e rotas
+- Entrada por perfil + **PIN** de 4 dígitos, conferido no próprio aparelho (funciona offline).
+- Foto de perfil, cargo editável e troca de PIN validada no servidor.
+- Rotas com cidades atendidas: criar, editar, excluir e restaurar sem perder o histórico.
+
+### 📱 App instalável
+- PWA com ícone na tela inicial, tela cheia e todas as telas disponíveis offline.
+
+## Como funciona
+
+O banco local é a fonte da verdade da interface; o Supabase é o espelho que une os aparelhos.
+
+```mermaid
+flowchart LR
+    A["📱 Tela"] -- lê e grava --> B[("IndexedDB<br/>no aparelho")]
+    B -- "envia pendentes<br/>(upsert por UUID)" --> C[("Supabase<br/>Postgres")]
+    C -- "baixa o que mudou<br/>(cursor updated_at)" --> B
+    D["📱 Aparelho do sócio"] <--> C
 ```
 
-Para testar o modo offline de verdade, use o build de produção:
+- Cada registro nasce com um **UUID** no aparelho, então repetir o envio nunca duplica.
+- Exclusões são **lógicas** (`deleted_at`) para chegarem ao outro aparelho.
+- `updated_at` vem sempre do servidor: relógio errado de celular não quebra a sincronização.
+- Dinheiro é guardado em **centavos inteiros**.
+- Um **service worker** próprio guarda as telas e seus arquivos para abrir sem rede.
 
-```bash
-npm run build && npm start         # abre em http://localhost:3000
-```
+## Tecnologias
 
-## Supabase
-
-1. No painel: **SQL Editor → New query**, cole e rode **em ordem** cada arquivo de `supabase/migrations/`:
-
-| Arquivo | O que faz |
+| Camada | Escolha |
 |---|---|
-| `0001_init.sql` | `sellers`, `routes`, `route_points`, `sales`, gatilhos e políticas RLS |
-| `0002_seller_avatar.sql` | coluna `sellers.avatar_url` (foto do perfil); a chave do app só pode alterar a foto |
-| `0003_finance.sql` | `product_prices`, `expenses` e o valor das vendas (`unit_prices`, `amount_cents`) |
-| `0004_route_soft_delete.sql` | `routes.deleted_at`: excluir rota sem perder as vendas dela (dá para restaurar) |
-| `0005_seller_role_edit.sql` | libera o app para editar o **cargo** do sócio (nome e PIN continuam só pelo SQL) |
-| `0006_change_pin.sql` | função `change_seller_pin`: troca o PIN pelo app (Ajustes → Mudar PIN) só se o PIN atual estiver certo |
+| Interface | Next.js 16 (App Router), React 19, TypeScript |
+| Estilo | Tailwind CSS 4 com tokens de tema, Atomic Design |
+| Dados no aparelho | Dexie (IndexedDB) com consultas reativas |
+| Servidor | Supabase (Postgres, RLS, função `security definer` para o PIN) |
+| Offline | Service worker escrito à mão, manifest PWA |
+| Gráficos | Componentes próprios em HTML/CSS, paleta validada para daltonismo |
+| Testes | Vitest + IndexedDB falso + Supabase falso em memória |
 
-   Todos podem ser rodados de novo sem estragar nada. Se faltar uma migração, o app avisa
-   "Banco desatualizado" e continua sincronizando os pacotes.
-2. **Troque os nomes e PINs** dos dois sócios (depois da 0006, cada um também pode trocar o próprio PIN em **Ajustes → Mudar PIN**; o SQL abaixo serve para redefinir um PIN esquecido) (o SQL cria "Sócio 1" PIN 1111 e "Sócio 2" PIN 2222):
-
-```sql
-update public.sellers
-   set name = 'João', pin_hash = encode(extensions.digest('4821', 'sha256'), 'hex')
- where name = 'Sócio 1';
-```
-
-3. Copie **Project URL** e **publishable key** (Settings → API Keys) para o `.env.local`.
-
-## Financeiro
-
-- Defina o **preço por pacote** de cada produto no fim da tela Financeiro. Ele vem preenchido em cada venda
-  e pode ser ajustado só naquela venda (cliente com desconto, por exemplo).
-- Cada venda guarda o preço usado. Vendas antigas, de antes do financeiro, usam o preço padrão atual.
-- Gastos têm valor, descrição, categoria, data e quem pagou. Saldo = entradas das vendas − gastos.
-- Dinheiro é sempre guardado em **centavos inteiros**.
-
-## Como funciona o offline
-
-- Tudo que a tela lê e grava passa pelo **IndexedDB** (`src/lib/db.ts`). Sem internet, nada muda para o usuário.
-- Cada venda nasce com um **UUID** no aparelho e fica marcada `dirty`. A sincronização (`src/lib/sync.ts`) **envia** o que está `dirty` (rotas → pontos → vendas → fotos, preços e gastos) e depois **baixa** o que mudou no servidor. Como usa upsert por UUID, repetir o envio nunca duplica.
-- Dispara sozinha: ao abrir, ao voltar a internet, ao voltar para o app e a cada 2 min. Também em **Ajustes → Forçar sincronização**.
-- Apagar venda ou gasto é **exclusão lógica** (`deleted_at`), para o apagar também chegar ao aparelho do sócio.
-- A foto do perfil é reduzida no aparelho para 256 px (~20 KB) e guardada no próprio cadastro do sócio.
-- O **service worker** (`public/sw.js`) guarda as 6 telas e todos os arquivos delas na instalação e a cada abertura online. Só roda em produção.
-
-## Estrutura (Atomic Design)
+## Estrutura
 
 ```
 src/
-  app/                  páginas finas (login, / painel, registrar, historico, financeiro, ajustes) + manifest
-  components/
-    atoms/              Button, IconButton, Badge, Card, Input, MoneyInput, Select, Toggle, Avatar, Logo...
-    molecules/          QuantityStepper, ProductCard, StatTile, SegmentedControl, AvatarPicker, Modal, Toast...
-      charts/           ColumnChart, RankedBars, ChartLegend, DataTable (HTML/CSS puro, sem biblioteca)
-    organisms/          AppHeader, BottomNav, FilterBar, SaleForm, ExpenseModal, PriceTable, SyncPanel, PinLogin...
-    templates/          AppShell (protege + header + nav), AuthLayout
-  providers/            Session (perfil/PIN), Sync, Pwa, Toast
-  lib/                  db (Dexie), sync, supabase, repo (escritas), stats, finance, money, filters, series, image
-  hooks/                leituras reativas do banco local, useLogout
-supabase/migrations/    SQL (rodar em ordem)
-public/                 logo.png (arte oficial), brand/ (recorte usado no app), icons/, sw.js
-scripts/                generate-icons.mjs: refaz marca e ícones a partir de public/logo.png
+├─ app/           telas: painel, registrar, histórico, financeiro, ajustes, login
+├─ components/
+│  ├─ atoms/      botões, campos, avatar, logo…
+│  ├─ molecules/  stepper, teclado do PIN, diálogos, gráficos…
+│  ├─ organisms/  formulário de venda, filtros, rotas, financeiro…
+│  └─ templates/  casca do app e da tela de login
+├─ lib/           banco local, sincronização, cálculos, filtros, exportação
+├─ providers/     sessão, sincronização, PWA, avisos
+└─ hooks/         leituras reativas do banco local
+supabase/migrations/   esquema do banco, em ordem
 ```
 
-Tokens (cores, tipografia, raios `card`/`control`/`chip`, cores dos gráficos) estão em `src/app/globals.css` (`@theme`).
+## Qualidade
 
-## Git flow
+- **36 testes** cobrindo a sincronização (envio, recebimento, exclusões, mudanças do sócio, banco com migração faltando), cálculos de financeiro e do painel, exportação e troca de PIN, rodando contra um Supabase falso em memória.
+- Tipagem estrita de ponta a ponta e build de produção verificado a cada mudança.
+- Interface testada em larguras de celular a partir de 320 px.
 
-- `main`: versão em produção. `develop`: integração.
-- Trabalho novo sai de `develop` em `feature/*`, `fix/*`, `style/*`, `refactor/*` ou `docs/*` e volta com merge `--no-ff`.
-- Commits em inglês no padrão Conventional Commits (`feat:`, `fix:`, `style:`, `refactor:`, `docs:`).
-- Para publicar: `release/x.y.z` a partir de `develop`, merge em `main` com tag e de volta em `develop`.
+## Rodando localmente
 
-## Limites conhecidos
+```bash
+npm install
+cp .env.local.example .env.local   # URL e publishable key do seu projeto Supabase
+npm run dev
+```
 
-- **Segurança do banco:** o app usa a chave `anon` e as políticas RLS liberam leitura/escrita para ela. Quem tiver a URL + chave consegue ler e gravar vendas. O **PIN é só um bloqueio de tela** (hash SHA-256 conferido no aparelho). Próximo passo recomendado: Supabase Auth + políticas `to authenticated`.
-- Não há **editar** venda nem gasto (apague e registre de novo). Rotas podem ser editadas, excluídas e restauradas em **Ajustes → Rotas**.
-- Primeira abertura de cada aparelho precisa de internet (para baixar os perfis).
-- Para instalar e usar offline, o site precisa estar em **HTTPS** (ou localhost).
+O passo a passo do banco (migrações, sócios, PIN), deploy e detalhes da sincronização estão em [`docs/CONFIGURACAO.md`](docs/CONFIGURACAO.md).
+
+## Próximos passos
+
+- Login com Supabase Auth no lugar da chave pública com RLS aberta.
+- Editar venda e gasto (hoje é apagar e registrar de novo).
+- Valor em R$ na exportação CSV e no resumo do WhatsApp.
+
+---
+
+<div align="center">
+
+Feito por [Joaomarcellodev](https://github.com/Joaomarcellodev) para a **Maxbono Sorvetes Distribuidora**.
+
+</div>
