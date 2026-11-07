@@ -1,15 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { ArrowLeftRight, BadgeCheck } from "lucide-react";
+import { BadgeCheck, LogOut } from "lucide-react";
 import { Avatar } from "../atoms/Avatar";
 import { Button } from "../atoms/Button";
 import { Card } from "../atoms/Card";
+import { useLogout } from "@/hooks/useLogout";
 import { useSession } from "@/providers/SessionProvider";
 
 export function ProfileSwitcher() {
-  const { seller, logout } = useSession();
-  const router = useRouter();
+  const { seller } = useSession();
+  const logout = useLogout();
   if (!seller) return null;
 
   return (
@@ -28,13 +28,10 @@ export function ProfileSwitcher() {
         className="relative mt-4"
         variant="soft"
         fullWidth
-        icon={<ArrowLeftRight className="size-5 text-primary" />}
-        onClick={() => {
-          logout();
-          router.replace("/login");
-        }}
+        icon={<LogOut className="size-5 text-primary" />}
+        onClick={logout}
       >
-        Trocar de perfil
+        Sair e entrar com outra conta
       </Button>
     </Card>
   );
