@@ -3,7 +3,7 @@ import type { Expense, ExpenseCategory, ProductId, ProductPrice, Sale, UnitPrice
 
 export const EXPENSE_CATEGORIES: ReadonlyArray<{ id: ExpenseCategory; label: string }> = [
   { id: "combustivel", label: "Combustível" },
-  { id: "reposicao", label: "Reposição de mercadoria" },
+  { id: "reposicao", label: "Reposição" },
   { id: "manutencao", label: "Manutenção" },
   { id: "alimentacao", label: "Alimentação" },
   { id: "pessoal", label: "Ajudante / pessoal" },
