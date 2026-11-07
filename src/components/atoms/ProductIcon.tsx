@@ -14,18 +14,21 @@ const tints: Record<ProductId, string> = {
   cremosinho: "bg-secondary-container/20 text-secondary",
 };
 
-export function ProductIcon({ id, size = "md" }: { id: ProductId; size?: "md" | "lg" }) {
+const boxes = { sm: "size-9", md: "size-12", lg: "size-14" };
+const glyphs = { sm: "size-5", md: "size-6", lg: "size-7" };
+
+export function ProductIcon({ id, size = "md" }: { id: ProductId; size?: keyof typeof boxes }) {
   const Icon = icons[id];
   return (
     <span
       aria-hidden
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-control",
-        size === "md" ? "size-12" : "size-14",
+        boxes[size],
         tints[id],
       )}
     >
-      <Icon className={size === "md" ? "size-6" : "size-7"} />
+      <Icon className={glyphs[size]} />
     </span>
   );
 }

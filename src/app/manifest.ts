@@ -22,6 +22,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: "Registrar venda", short_name: "Registrar", url: "/registrar", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
       { name: "Histórico", url: "/historico", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+      { name: "Financeiro", url: "/financeiro", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
     ],
   };
 }

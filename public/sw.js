@@ -9,13 +9,13 @@
  * Os dados (vendas, rotas) NÃO passam por aqui: ficam no IndexedDB e sincronizam com o Supabase.
  * Mudou a lógica do cache? Aumente VERSION.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `maxbono-static-${VERSION}`;
 const PAGE_CACHE = `maxbono-pages-${VERSION}`;
 const RSC_CACHE = `maxbono-rsc-${VERSION}`;
 const KEEP = [STATIC_CACHE, PAGE_CACHE, RSC_CACHE];
 
-const PAGES = ["/", "/login", "/registrar", "/historico", "/ajustes"];
+const PAGES = ["/", "/login", "/registrar", "/historico", "/financeiro", "/ajustes"];
 const EXTRA = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png", "/brand/logo-wordmark.webp"];
 const NAV_TIMEOUT_MS = 4000;
 
