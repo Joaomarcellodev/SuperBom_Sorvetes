@@ -190,6 +190,23 @@ export async function syncAll(): Promise<SyncResult> {
     late ??= e instanceof Error ? e : new Error(String(e));
   }
 
+  // Cargo editado (migração 0005 libera a coluna "role" para o app).
+  const dirtyRoles = await db.sellers.filter((s) => s.roleDirty === 1).toArray();
+  for (const s of dirtyRoles) {
+    const { error } = await sb.from("sellers").update({ role: s.role }).eq("id", s.id);
+    if (error) {
+      late ??= new Error(error.message);
+      break;
+    }
+    await db.sellers
+      .where("id")
+      .equals(s.id)
+      .modify((current) => {
+        if (current.role === s.role) current.roleDirty = 0;
+      });
+    pushed += 1;
+  }
+
   // ---------- 2. BAIXAR ----------
   const [sellersRes, routesRes, pointsRes] = await Promise.all([
     // "*" e não a lista de colunas: funciona com ou sem a coluna avatar_url (migração 0002).
@@ -207,16 +224,18 @@ export async function syncAll(): Promise<SyncResult> {
   const remotePoints = (pointsRes.data ?? []) as RemotePoint[];
 
   await db.transaction("rw", db.sellers, db.routes, db.points, async () => {
-    // Foto trocada aqui e ainda não enviada vence a do servidor.
+    // Foto ou cargo trocados aqui e ainda não enviados vencem os do servidor.
     const localAvatars = new Map(
       (await db.sellers.filter((s) => s.avatarDirty === 1).toArray()).map((s) => [s.id, s.avatarUrl ?? null]),
     );
+    const localRoles = new Map((await db.sellers.filter((s) => s.roleDirty === 1).toArray()).map((s) => [s.id, s.role]));
     const sellers: Seller[] = remoteSellers.map((s) => {
       const dirty = localAvatars.has(s.id);
       return {
         id: s.id,
         name: s.name,
-        role: s.role,
+        role: localRoles.get(s.id) ?? s.role,
+        roleDirty: localRoles.has(s.id) ? 1 : 0,
         pinHash: s.pin_hash,
         avatarUrl: dirty ? localAvatars.get(s.id) : (s.avatar_url ?? null),
         avatarDirty: dirty ? 1 : 0,

@@ -13,6 +13,8 @@ export interface Seller {
   avatarUrl?: string | null;
   /** 1 = foto trocada no aparelho e ainda não enviada ao Supabase */
   avatarDirty?: 0 | 1;
+  /** 1 = cargo editado no aparelho e ainda não enviado ao Supabase */
+  roleDirty?: 0 | 1;
 }
 
 export interface Route {
