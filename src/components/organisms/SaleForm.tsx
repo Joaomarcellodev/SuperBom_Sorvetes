@@ -75,7 +75,7 @@ export function SaleForm() {
       { id: seller.id, label: `Eu (${firstName(seller.name)})`, icon: <UserRound /> },
       ...others.map((s) => ({
         id: s.id,
-        label: others.length === 1 ? `Sócio (${firstName(s.name)})` : s.name,
+        label: firstName(s.name),
         icon: <Users />,
       })),
     ];
