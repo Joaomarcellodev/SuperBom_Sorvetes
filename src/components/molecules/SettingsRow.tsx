@@ -27,7 +27,7 @@ export function SettingsRow({
 }) {
   const body = (
     <>
-      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-container-highest [&_svg]:size-[22px]", iconTones[tone])}>
+      <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-control bg-surface-container-highest [&_svg]:size-[22px]", iconTones[tone])}>
         {icon}
       </span>
       <span className="min-w-0 flex-1 text-left">
@@ -37,7 +37,7 @@ export function SettingsRow({
       {trailing && <span className="shrink-0 text-on-surface-variant [&_svg]:size-5">{trailing}</span>}
     </>
   );
-  const cls = "flex w-full items-center gap-3 rounded-2xl bg-surface-container-low p-3";
+  const cls = "flex w-full items-center gap-3 rounded-control bg-surface-container-low p-3";
   return onClick ? (
     <button type="button" disabled={disabled} onClick={onClick} className={cn(cls, "transition-all active:scale-[0.99] active:bg-surface-container-high disabled:opacity-50")}>
       {body}

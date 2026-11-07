@@ -145,7 +145,7 @@ export function PinLogin() {
           </button>
         </div>
         {showHelp && (
-          <p className="rounded-2xl bg-surface-container-lowest p-3 text-body-sm text-on-surface-variant">
+          <p className="rounded-control bg-surface-container-lowest p-3 text-body-sm text-on-surface-variant">
             O PIN é definido na tabela <code>sellers</code> do Supabase. Veja no README como gerar um novo.
           </p>
         )}

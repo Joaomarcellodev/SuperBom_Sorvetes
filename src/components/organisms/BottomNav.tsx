@@ -34,7 +34,7 @@ export function BottomNav() {
                 )}
               >
                 {highlight ? (
-                  <span className="-mt-4 flex size-11 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-glow-primary-lg">
+                  <span className="-mt-4 flex size-11 items-center justify-center rounded-control bg-primary-container text-on-primary-container shadow-glow-primary-lg">
                     <Icon className="size-6" />
                   </span>
                 ) : (

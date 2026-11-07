@@ -8,7 +8,7 @@ export function FilterChip({ active, onClick, children }: { active: boolean; onC
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "h-10 shrink-0 rounded-full px-4 text-label-lg transition-colors",
+        "h-10 shrink-0 rounded-control px-4 text-label-lg transition-colors",
         active ? "bg-primary-container text-on-primary-container" : "bg-surface-container-high text-on-surface-variant hover:text-on-surface",
       )}
     >

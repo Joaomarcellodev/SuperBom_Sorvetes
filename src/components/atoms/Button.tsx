@@ -30,7 +30,7 @@ const sizes: Record<Size, string> = {
 
 export function buttonStyles(variant: Variant = "primary", size: Size = "md", fullWidth?: boolean, className?: string): string {
   return cn(
-    "inline-flex select-none items-center justify-center gap-2 rounded-full transition-all active:scale-[0.97]",
+    "inline-flex select-none items-center justify-center gap-2 rounded-control transition-all active:scale-[0.97]",
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:active:scale-100",
     variants[variant],
     sizes[size],

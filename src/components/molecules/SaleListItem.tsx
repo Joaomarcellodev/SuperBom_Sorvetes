@@ -52,7 +52,7 @@ export function SaleListItem({
           )}
         </div>
       </div>
-      {sale.note && <p className="mt-1 rounded-xl bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface-variant">{sale.note}</p>}
+      {sale.note && <p className="mt-1 rounded-control bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface-variant">{sale.note}</p>}
       <div className="flex items-center justify-between pt-2 text-label-sm text-on-surface-variant">
         <span className="flex min-w-0 items-center gap-1">
           <UserRound className="size-3.5 shrink-0" />

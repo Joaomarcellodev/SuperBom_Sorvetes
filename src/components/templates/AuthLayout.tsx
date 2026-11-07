@@ -19,7 +19,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 
   return (
     <main className="pb-safe pt-safe mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-3 py-6">
-      <header className="flex flex-col items-center gap-2 rounded-3xl bg-surface-container p-6 text-center shadow-card">
+      <header className="flex flex-col items-center gap-2 rounded-card bg-surface-container p-6 text-center shadow-card">
         <h1 className="sr-only">Maxbono Sorvetes</h1>
         <Logo size="lg" />
         <p className="max-w-64 text-body-sm text-on-surface-variant">Registro de vendas por rota, com ou sem internet</p>

@@ -23,7 +23,7 @@ export function IconButton({ label, children, tone = "neutral", size = "md", cla
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full transition-all active:scale-90 disabled:opacity-40",
+        "inline-flex shrink-0 items-center justify-center rounded-control transition-all active:scale-90 disabled:opacity-40",
         size === "md" ? "size-12" : "size-14",
         tones[tone],
         className,

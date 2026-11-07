@@ -6,7 +6,7 @@ export function PinDots({ length, total = 4, state = "idle" }: { length: number;
       role="img"
       aria-label={`${length} de ${total} dígitos`}
       className={cn(
-        "flex items-center justify-center gap-4 rounded-2xl bg-surface-container-lowest py-4",
+        "flex items-center justify-center gap-4 rounded-control bg-surface-container-lowest py-4",
         state === "error" && "animate-shake",
       )}
     >

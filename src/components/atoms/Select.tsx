@@ -14,7 +14,7 @@ export function Select({ icon, variant = "field", className, children, ...props 
     <div
       className={cn(
         "relative flex items-center gap-2 bg-surface-container-lowest focus-within:ring-2 focus-within:ring-secondary",
-        chip ? "rounded-full bg-surface-container-high pl-3 pr-8" : "rounded-2xl px-3",
+        chip ? "rounded-control bg-surface-container-high pl-3 pr-8" : "rounded-control px-3",
       )}
     >
       {icon && <span className="shrink-0 text-secondary [&_svg]:size-5">{icon}</span>}

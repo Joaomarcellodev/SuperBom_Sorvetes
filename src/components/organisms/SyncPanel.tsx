@@ -30,7 +30,7 @@ export function SyncPanel() {
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-display text-headline-sm">
-          <span className="flex size-8 items-center justify-center rounded-full bg-surface-container-high text-secondary">
+          <span className="flex size-8 items-center justify-center rounded-control bg-surface-container-high text-secondary">
             <RefreshCw className="size-5" />
           </span>
           Conexão e nuvem
