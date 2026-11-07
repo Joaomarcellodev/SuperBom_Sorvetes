@@ -56,6 +56,11 @@ export async function deleteSale(id: string): Promise<void> {
   await getDb().sales.update(id, { deletedAt: new Date().toISOString(), dirty: 1 });
 }
 
+/** Troca (ou remove, com null) a foto do perfil. Fica no aparelho e sobe na próxima sincronização. */
+export async function updateSellerAvatar(sellerId: string, avatarUrl: string | null): Promise<void> {
+  await getDb().sellers.update(sellerId, { avatarUrl, avatarDirty: 1 });
+}
+
 export async function createRoute(name: string, cities: string[]): Promise<Route> {
   const db = getDb();
   const cleanName = name.trim();

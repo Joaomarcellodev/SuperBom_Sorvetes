@@ -9,6 +9,10 @@ export interface Seller {
   role: string;
   /** SHA-256 (hex) do PIN. O PIN é um bloqueio de tela, não é a segurança do banco. */
   pinHash: string;
+  /** Foto de perfil em data URL (JPEG pequeno). null = usa as iniciais. */
+  avatarUrl?: string | null;
+  /** 1 = foto trocada no aparelho e ainda não enviada ao Supabase */
+  avatarDirty?: 0 | 1;
 }
 
 export interface Route {
