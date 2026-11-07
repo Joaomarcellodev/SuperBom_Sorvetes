@@ -37,7 +37,7 @@ export function AppHeader() {
                 <span className="text-label-sm leading-none text-on-surface-variant">Vendedor</span>
                 <span className="max-w-28 truncate text-label-md font-bold leading-tight text-on-surface">{seller.name}</span>
               </span>
-              <Avatar name={seller.name} size="sm" />
+              <Avatar name={seller.name} photo={seller.avatarUrl} size="sm" />
             </Link>
             <IconButton label="Sair da conta" className="size-10" onClick={() => setConfirmOut(true)}>
               <LogOut className="size-5" />

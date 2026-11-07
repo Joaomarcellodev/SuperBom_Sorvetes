@@ -16,6 +16,8 @@ interface RemoteSeller {
   name: string;
   role: string;
   pin_hash: string;
+  /** só existe depois da migração 0002 */
+  avatar_url?: string | null;
 }
 interface RemoteRoute {
   id: string;
@@ -60,6 +62,8 @@ export async function syncAll(): Promise<SyncResult> {
   const db = getDb();
   let pushed = 0;
   let pulled = 0;
+  /** Falha de uma parte opcional (ex.: migração ainda não rodada): avisada só depois de baixar tudo. */
+  let late: Error | null = null;
 
   // ---------- 1. ENVIAR ----------
   const dirtyRoutes = await db.routes.where("dirty").equals(1).toArray();
@@ -112,9 +116,28 @@ export async function syncAll(): Promise<SyncResult> {
     pushed += batch.length;
   }
 
+  // Fotos de perfil (depois das vendas: se a migração 0002 ainda não rodou, as vendas já subiram).
+  const dirtyAvatars = await db.sellers.filter((s) => s.avatarDirty === 1).toArray();
+  for (const s of dirtyAvatars) {
+    const { error } = await sb.from("sellers").update({ avatar_url: s.avatarUrl ?? null }).eq("id", s.id);
+    if (error) {
+      // Não trava o resto: guarda o erro, baixa as vendas do sócio e avisa no final.
+      late ??= new Error(error.message);
+      break;
+    }
+    await db.sellers
+      .where("id")
+      .equals(s.id)
+      .modify((current) => {
+        if (current.avatarUrl === s.avatarUrl) current.avatarDirty = 0;
+      });
+    pushed += 1;
+  }
+
   // ---------- 2. BAIXAR ----------
   const [sellersRes, routesRes, pointsRes] = await Promise.all([
-    sb.from("sellers").select("id,name,role,pin_hash"),
+    // "*" e não a lista de colunas: funciona com ou sem a coluna avatar_url (migração 0002).
+    sb.from("sellers").select("*"),
     sb.from("routes").select("id,name,cities,created_at"),
     sb.from("route_points").select("id,route_id,name"),
   ]);
@@ -127,12 +150,21 @@ export async function syncAll(): Promise<SyncResult> {
   const remotePoints = (pointsRes.data ?? []) as RemotePoint[];
 
   await db.transaction("rw", db.sellers, db.routes, db.points, async () => {
-    const sellers: Seller[] = remoteSellers.map((s) => ({
-      id: s.id,
-      name: s.name,
-      role: s.role,
-      pinHash: s.pin_hash,
-    }));
+    // Foto trocada aqui e ainda não enviada vence a do servidor.
+    const localAvatars = new Map(
+      (await db.sellers.filter((s) => s.avatarDirty === 1).toArray()).map((s) => [s.id, s.avatarUrl ?? null]),
+    );
+    const sellers: Seller[] = remoteSellers.map((s) => {
+      const dirty = localAvatars.has(s.id);
+      return {
+        id: s.id,
+        name: s.name,
+        role: s.role,
+        pinHash: s.pin_hash,
+        avatarUrl: dirty ? localAvatars.get(s.id) : (s.avatar_url ?? null),
+        avatarDirty: dirty ? 1 : 0,
+      };
+    });
     await db.sellers.clear();
     await db.sellers.bulkPut(sellers);
 
@@ -191,5 +223,6 @@ export async function syncAll(): Promise<SyncResult> {
   if (maxSeen) await setMeta(META_SALES_CURSOR, maxSeen);
 
   await setMeta(META_LAST_SYNC, new Date().toISOString());
+  if (late) throw late;
   return { pushed, pulled };
 }

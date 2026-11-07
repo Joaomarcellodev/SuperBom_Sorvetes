@@ -24,7 +24,7 @@ export function ProfileCard({ seller, selected, onSelect }: { seller: Seller; se
       >
         <Check className="size-4" />
       </span>
-      <Avatar name={seller.name} />
+      <Avatar name={seller.name} photo={seller.avatarUrl} />
       <span className="min-w-0 max-w-full">
         <span className={cn("block truncate font-display text-headline-sm", selected ? "text-primary" : "text-on-surface")}>{seller.name}</span>
         <span className="mt-0.5 block truncate text-label-sm text-on-surface-variant">{seller.role}</span>
