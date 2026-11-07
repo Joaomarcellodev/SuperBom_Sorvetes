@@ -84,7 +84,7 @@ export function FilterBar({
             <Select icon={<MapPin />} value={value.routeId} onChange={(e) => set({ routeId: e.target.value })}>
               <option value="">Todas as rotas</option>
               {routes.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <option key={r.id} value={r.id}>{r.deletedAt ? `${r.name} (excluída)` : r.name}</option>
               ))}
             </Select>
           </Field>

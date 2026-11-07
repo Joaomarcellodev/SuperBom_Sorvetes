@@ -110,19 +110,48 @@ export async function deleteExpense(id: string): Promise<void> {
   await getDb().expenses.update(id, { deletedAt: new Date().toISOString(), dirty: 1 });
 }
 
+/** Nome repetido entre as rotas ativas (ignorando a própria rota ao editar). */
+async function assertUniqueRouteName(name: string, exceptId?: string): Promise<void> {
+  const taken = await getDb()
+    .routes.filter((r) => !r.deletedAt && r.id !== exceptId && r.name.toLowerCase() === name.toLowerCase())
+    .count();
+  if (taken > 0) throw new Error("Já existe uma rota com esse nome.");
+}
+
+const cleanCities = (cities: string[]) => cities.map((c) => c.trim()).filter(Boolean);
+
+export async function updateRoute(id: string, name: string, cities: string[]): Promise<void> {
+  const cleanName = name.trim();
+  if (!cleanName) throw new Error("Dê um nome para a rota.");
+  await assertUniqueRouteName(cleanName, id);
+  await getDb().routes.update(id, { name: cleanName, cities: cleanCities(cities), dirty: 1 });
+}
+
+/** Exclusão lógica: a rota some das listas, mas as vendas antigas continuam mostrando o nome dela. */
+export async function deleteRoute(id: string): Promise<void> {
+  await getDb().routes.update(id, { deletedAt: new Date().toISOString(), dirty: 1 });
+}
+
+export async function restoreRoute(id: string): Promise<void> {
+  const db = getDb();
+  const route = await db.routes.get(id);
+  if (!route) return;
+  await assertUniqueRouteName(route.name, id);
+  await db.routes.update(id, { deletedAt: null, dirty: 1 });
+}
+
 export async function createRoute(name: string, cities: string[]): Promise<Route> {
   const db = getDb();
   const cleanName = name.trim();
   if (!cleanName) throw new Error("Dê um nome para a rota.");
-
-  const exists = await db.routes.filter((r) => r.name.toLowerCase() === cleanName.toLowerCase()).count();
-  if (exists > 0) throw new Error("Já existe uma rota com esse nome.");
+  await assertUniqueRouteName(cleanName);
 
   const route: Route = {
     id: crypto.randomUUID(),
     name: cleanName,
-    cities: cities.map((c) => c.trim()).filter(Boolean),
+    cities: cleanCities(cities),
     createdAt: new Date().toISOString(),
+    deletedAt: null,
     dirty: 1,
   };
   await db.routes.add(route);
