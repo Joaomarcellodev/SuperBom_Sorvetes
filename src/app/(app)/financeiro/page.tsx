@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Info, Plus, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Info, Plus, Tag, Wallet } from "lucide-react";
 import { Button } from "@/components/atoms/Button";
 import { Card } from "@/components/atoms/Card";
+import { Banner } from "@/components/molecules/Banner";
 import { Skeleton } from "@/components/atoms/Skeleton";
 import { ColumnChart } from "@/components/molecules/charts/ColumnChart";
 import { RankedBars } from "@/components/molecules/charts/RankedBars";
@@ -60,7 +61,8 @@ export default function FinancePage() {
       ...e.map((x) => ({ date: x.expenseDate, createdAt: x.createdAt, v: [0, x.amountCents] })),
     ];
     const { buckets } = buildBuckets(points, from, today, 2, (p) => p.v);
-    return { summary, buckets, expenses: e };
+    const pricesMissing = Object.values(defaults).every((v) => v === 0) && s.length > 0;
+    return { summary, buckets, expenses: e, pricesMissing };
   }, [sales, expenses, prices, filters, today]);
 
   const confirmDelete = async () => {
@@ -95,13 +97,27 @@ export default function FinancePage() {
         </div>
       ) : (
         <>
+          {view.pricesMissing && (
+            <a href="#precos" className="block">
+              <Banner tone="offline" icon={<Tag />} title="Defina o preço por pacote">
+                Há vendas no período, mas nenhum produto tem preço. Cadastre no fim desta tela para calcular as entradas.
+              </Banner>
+            </a>
+          )}
+
           <section aria-label="Resumo" className="space-y-2">
             <StatTile
               hero
               icon={<Wallet />}
               label="Saldo do período"
               value={formatMoney(s.balanceCents)}
-              caption={s.balanceCents >= 0 ? "Entrou mais do que saiu" : "Saiu mais do que entrou"}
+              caption={
+                s.incomeCents === 0 && s.expenseCents === 0
+                  ? "Sem entradas nem gastos no período"
+                  : s.balanceCents >= 0
+                    ? "Entrou mais do que saiu"
+                    : "Saiu mais do que entrou"
+              }
             />
             <div className="grid grid-cols-2 gap-2">
               <StatTile icon={<ArrowDownCircle />} label="Entrou" value={formatMoney(s.incomeCents)} caption="vendas" />
@@ -117,7 +133,13 @@ export default function FinancePage() {
 
           <Card className="space-y-3">
             <SectionHeader title="Entradas × saídas" />
-            <ColumnChart buckets={view.buckets} series={SERIES} format={formatMoney} formatAxis={formatMoneyAxis} />
+            <ColumnChart
+              buckets={view.buckets}
+              series={SERIES}
+              format={formatMoney}
+              formatAxis={formatMoneyAxis}
+              emptyText={view.pricesMissing ? "Cadastre os preços para ver as entradas." : "Sem movimento no período."}
+            />
           </Card>
 
           <Card className="space-y-3">
