@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeCheck, Check, LogOut, Pencil, X } from "lucide-react";
+import { BadgeCheck, Check, KeyRound, LogOut, Pencil, X } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { Card } from "../atoms/Card";
 import { IconButton } from "../atoms/IconButton";
 import { Input } from "../atoms/Input";
 import { AvatarPicker } from "../molecules/AvatarPicker";
+import { ChangePinModal } from "./ChangePinModal";
 import { useLogout } from "@/hooks/useLogout";
 import { photoToAvatar } from "@/lib/image";
 import { ROLE_MAX, updateSellerAvatar, updateSellerRole } from "@/lib/repo";
@@ -17,12 +18,13 @@ import { useToast } from "@/providers/ToastProvider";
 /** Meu perfil: foto, nome, cargo e sair da conta. */
 export function ProfileSwitcher() {
   const { seller } = useSession();
-  const { syncNow } = useSync();
+  const { syncNow, online } = useSync();
   const { toast } = useToast();
   const logout = useLogout();
   const [editingRole, setEditingRole] = useState(false);
   const [roleDraft, setRoleDraft] = useState("");
   const [roleError, setRoleError] = useState<string | null>(null);
+  const [pinOpen, setPinOpen] = useState(false);
   if (!seller) return null;
 
   const startRoleEdit = () => {
@@ -112,9 +114,25 @@ export function ProfileSwitcher() {
           </button>
         )}
       </div>
-      <Button variant="soft" fullWidth icon={<LogOut className="size-5 text-primary" />} onClick={logout}>
-        Sair e entrar com outra conta
-      </Button>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Button variant="soft" fullWidth icon={<KeyRound className="size-5 text-secondary" />} onClick={() => setPinOpen(true)}>
+          Mudar PIN
+        </Button>
+        <Button variant="soft" fullWidth icon={<LogOut className="size-5 text-primary" />} onClick={logout}>
+          Sair e entrar com outra conta
+        </Button>
+      </div>
+      <ChangePinModal
+        open={pinOpen}
+        sellerId={seller.id}
+        online={online}
+        onClose={() => setPinOpen(false)}
+        onChanged={() => {
+          setPinOpen(false);
+          toast({ title: "PIN alterado", description: "Use o novo PIN a partir de agora, nos dois aparelhos." });
+          void syncNow();
+        }}
+      />
     </Card>
   );
 }

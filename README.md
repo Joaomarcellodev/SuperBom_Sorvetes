@@ -31,10 +31,11 @@ npm run build && npm start         # abre em http://localhost:3000
 | `0003_finance.sql` | `product_prices`, `expenses` e o valor das vendas (`unit_prices`, `amount_cents`) |
 | `0004_route_soft_delete.sql` | `routes.deleted_at`: excluir rota sem perder as vendas dela (dá para restaurar) |
 | `0005_seller_role_edit.sql` | libera o app para editar o **cargo** do sócio (nome e PIN continuam só pelo SQL) |
+| `0006_change_pin.sql` | função `change_seller_pin`: troca o PIN pelo app (Ajustes → Mudar PIN) só se o PIN atual estiver certo |
 
    Todos podem ser rodados de novo sem estragar nada. Se faltar uma migração, o app avisa
    "Banco desatualizado" e continua sincronizando os pacotes.
-2. **Troque os nomes e PINs** dos dois sócios (o SQL cria "Sócio 1" PIN 1111 e "Sócio 2" PIN 2222):
+2. **Troque os nomes e PINs** dos dois sócios (depois da 0006, cada um também pode trocar o próprio PIN em **Ajustes → Mudar PIN**; o SQL abaixo serve para redefinir um PIN esquecido) (o SQL cria "Sócio 1" PIN 1111 e "Sócio 2" PIN 2222):
 
 ```sql
 update public.sellers
