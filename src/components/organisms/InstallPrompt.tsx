@@ -26,7 +26,7 @@ export function InstallPrompt() {
   return (
     <Card className="bg-gradient-to-br from-surface-container-high via-surface-container to-surface-container-lowest">
       <div className="flex items-start gap-3">
-        <Logo showName={false} />
+        <Logo size="sm" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-headline-sm text-primary">Instalar no celular</h2>
@@ -45,7 +45,7 @@ export function InstallPrompt() {
           icon={<DownloadCloud className="size-6" />}
           onClick={async () => {
             const result = await install();
-            if (result === "accepted") toast({ title: "App instalado!", description: "Procure o ícone Superbom na tela inicial." });
+            if (result === "accepted") toast({ title: "App instalado!", description: "Procure o ícone Maxbono na tela inicial." });
           }}
         >
           Instalar app

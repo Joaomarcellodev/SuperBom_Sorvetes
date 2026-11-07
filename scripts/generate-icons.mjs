@@ -1,37 +1,34 @@
 /**
- * Gera os PNGs do app a partir de public/icons/icon.svg.
- * Só precisa rodar de novo se mudar o desenho. Requer o Playwright instalado:
- *   npm i -D playwright && npx playwright install chromium && node scripts/generate-icons.mjs
+ * Gera a marca e os ícones do app a partir de public/logo.png (arte oficial da Maxbono).
+ * Só precisa rodar de novo se trocar a arte:
+ *   node scripts/generate-icons.mjs
+ * Usa o sharp, que já vem instalado com o Next.
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import sharp from "sharp";
 
-const { chromium } = createRequire(import.meta.url)("playwright");
+const SRC = new URL("../public/logo.png", import.meta.url).pathname;
+const out = (p) => new URL(`../public/${p}`, import.meta.url).pathname;
 
-const svg = readFileSync(new URL("../public/icons/icon.svg", import.meta.url), "utf8");
-// "maskable": fundo sem cantos arredondados e desenho menor (zona segura de 80%).
-const maskable = svg
-  .replace(/<rect width="512" height="512" rx="112"/, '<rect width="512" height="512" rx="0"')
-  .replace("<g transform=\"rotate(-20 256 256)\">", '<g transform="translate(256 256) scale(0.8) translate(-256 -256) rotate(-20 256 256)">');
-// apple-touch-icon: iOS aplica os cantos sozinho.
-const apple = svg.replace(/<rect width="512" height="512" rx="112"/, '<rect width="512" height="512" rx="0"');
+// Recorte só do nome "Maxbono Sorvetes Distribuidora" (sem slogan e selos).
+const CROP = { left: 40, top: 55, width: 560, height: 347 };
+// Azul do fundo da arte, para os ícones não terem emenda.
+const BG = "#110f51";
 
-const jobs = [
-  ["icon-192.png", svg, 192],
-  ["icon-512.png", svg, 512],
-  ["maskable-512.png", maskable, 512],
-  ["apple-touch-icon.png", apple, 180],
-];
+const mark = sharp(SRC).extract(CROP);
+await mark.clone().webp({ quality: 86 }).toFile(out("brand/logo-wordmark.webp"));
 
-const browser = await chromium.launch();
-for (const [name, markup, size] of jobs) {
-  const page = await browser.newPage({ viewport: { width: size, height: size } });
-  await page.setContent(
-    `<style>html,body{margin:0;background:transparent}svg{display:block;width:${size}px;height:${size}px}</style>${markup}`,
-  );
-  const png = await page.screenshot({ omitBackground: true, type: "png" });
-  writeFileSync(new URL(`../public/icons/${name}`, import.meta.url), png);
-  await page.close();
-  console.log("gerado", name);
+async function icon(size, scale, file) {
+  const width = Math.round(size * scale);
+  const art = await mark.clone().resize({ width }).png().toBuffer();
+  await sharp({ create: { width: size, height: size, channels: 3, background: BG } })
+    .composite([{ input: art, gravity: "center" }])
+    .png({ compressionLevel: 9, palette: true, quality: 92 })
+    .toFile(out(`icons/${file}`));
 }
-await browser.close();
+
+// "maskable": desenho menor para caber na zona segura (80%) que o Android recorta.
+await icon(512, 0.94, "icon-512.png");
+await icon(192, 0.94, "icon-192.png");
+await icon(512, 0.78, "maskable-512.png");
+await icon(180, 0.94, "apple-touch-icon.png");
+console.log("Ícones gerados em public/icons e public/brand.");

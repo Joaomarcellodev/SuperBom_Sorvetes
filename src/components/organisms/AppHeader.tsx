@@ -15,11 +15,8 @@ export function AppHeader() {
     <header className="pt-safe fixed inset-x-0 top-0 z-50 bg-surface-container-lowest/85 shadow-[0_4px_20px_rgba(0,8,54,0.65)] backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-xl items-center justify-between gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Logo showName={false} />
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate font-display text-headline-sm leading-tight text-primary">Superbom</span>
-            <SyncStatusBadge online={online} syncing={syncing} />
-          </div>
+          <Logo size="sm" />
+          <SyncStatusBadge online={online} syncing={syncing} />
         </div>
         {seller && (
           <Link href="/ajustes" aria-label="Abrir ajustes e trocar de perfil" className="flex shrink-0 items-center gap-2">
