@@ -20,21 +20,28 @@ export function Modal({
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
+  // Quem usa o modal costuma passar uma função nova a cada render. Guardar em ref evita
+  // que o efeito abaixo rode de novo a cada tecla e roube o foco do campo sendo digitado.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
     document.addEventListener("keydown", onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panel.current?.focus();
+    // Foca o painel só se nenhum campo dele (ex.: autoFocus) já pegou o foco.
+    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
       previous?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
