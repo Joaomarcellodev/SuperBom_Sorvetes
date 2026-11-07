@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CloudOff, KeyRound, LogIn, WifiOff, Zap } from "lucide-react";
+import { CloudOff, KeyRound, WifiOff, Zap } from "lucide-react";
 import { Banner } from "../molecules/Banner";
 import { PinDots } from "../molecules/PinDots";
 import { PinPad } from "../molecules/PinPad";
 import { ProfileCard } from "../molecules/ProfileCard";
-import { Card } from "../atoms/Card";
 import { Toggle } from "../atoms/Toggle";
 import { Skeleton } from "../atoms/Skeleton";
 import { useSession } from "@/providers/SessionProvider";
@@ -79,7 +78,7 @@ export function PinLogin() {
   if (sellers.length === 0) {
     return !configured ? (
       <Banner tone="error" icon={<KeyRound />} title="Supabase não configurado">
-        Preencha NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY no .env.local e rode o SQL de supabase/migrations.
+        Preencha NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY no .env.local e rode o SQL de supabase/migrations.
       </Banner>
     ) : !online ? (
       <Banner tone="offline" icon={<WifiOff />} title="Conecte-se uma vez">
@@ -95,13 +94,9 @@ export function PinLogin() {
   }
 
   return (
-    <div className="space-y-4">
-      <section aria-label="Quem está usando?" className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-label-md uppercase text-on-surface-variant">Identifique-se</h2>
-          <span className="text-label-sm text-secondary">Toque para selecionar</span>
-        </div>
-        <div role="radiogroup" aria-label="Perfil" className="grid grid-cols-2 gap-2">
+    <div className="flex w-full flex-col items-center gap-6">
+      <section aria-label="Quem está usando?" className="w-full">
+        <div role="radiogroup" aria-label="Perfil" className="flex flex-wrap justify-center gap-4">
           {sellers.map((s) => (
             <ProfileCard
               key={s.id}
@@ -118,13 +113,11 @@ export function PinLogin() {
         </div>
       </section>
 
-      <Card className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-label-lg">
-            <KeyRound className="size-5 text-secondary" /> PIN de {PIN_LENGTH} dígitos
-          </span>
-          <span className="text-label-sm font-bold text-primary">Para: {selected?.name.split(" ")[0]}</span>
-        </div>
+      <section aria-label="PIN" className="flex w-full flex-col items-center gap-3">
+        <p className="flex items-center gap-2 text-body-md text-on-surface-variant">
+          <KeyRound className="size-4 text-secondary" />
+          Digite o PIN de <span className="font-bold text-on-surface">{selected?.name.split(" ")[0]}</span>
+        </p>
         <PinDots length={pin.length} total={PIN_LENGTH} state={status === "error" ? "error" : status === "success" ? "success" : "idle"} />
         <p role="alert" className="min-h-5 text-center text-body-sm text-error">
           {status === "error" ? "PIN incorreto. Tente de novo." : ""}
@@ -135,32 +128,27 @@ export function PinLogin() {
           onBackspace={() => !busy.current && setPin((p) => p.slice(0, -1))}
           onClear={() => !busy.current && setPin("")}
         />
-        <div className="flex items-center justify-between gap-2 px-1">
-          <label className="flex cursor-pointer items-center gap-2 text-body-md">
-            <Toggle checked={keep} onChange={setKeep} label="Manter conectado" />
-            Manter conectado
-          </label>
-          <button type="button" onClick={() => setShowHelp((v) => !v)} className="text-label-sm text-secondary hover:underline">
-            Esqueceu o PIN?
-          </button>
-        </div>
-        {showHelp && (
-          <p className="rounded-control bg-surface-container-lowest p-3 text-body-sm text-on-surface-variant">
-            O PIN é definido na tabela <code>sellers</code> do Supabase. Veja no README como gerar um novo.
-          </p>
-        )}
-      </Card>
+      </section>
 
-      {online ? (
-        <Banner icon={<Zap />} title="Funciona sem internet">
-          Suas vendas são gravadas no aparelho e sobem automaticamente ao reconectar.
-        </Banner>
-      ) : (
-        <Banner tone="offline" icon={<CloudOff />} title="Acesso liberado sem internet">
-          O PIN é conferido no próprio aparelho.
-        </Banner>
+      <div className="flex w-full max-w-[18rem] items-center justify-between gap-3">
+        <label className="flex cursor-pointer items-center gap-2 text-body-sm text-on-surface">
+          <Toggle checked={keep} onChange={setKeep} label="Manter conectado" />
+          Manter conectado
+        </label>
+        <button type="button" onClick={() => setShowHelp((v) => !v)} className="text-label-sm text-secondary hover:underline">
+          Esqueceu o PIN?
+        </button>
+      </div>
+      {showHelp && (
+        <p className="w-full max-w-[18rem] rounded-control bg-surface-container-low p-3 text-center text-body-sm text-on-surface-variant">
+          O PIN é definido na tabela <code>sellers</code> do Supabase. Veja no README como gerar um novo.
+        </p>
       )}
-      <LoginHint />
+
+      <p className="flex max-w-[18rem] items-center justify-center gap-1.5 text-center text-label-sm text-on-surface-variant">
+        {online ? <Zap className="size-3.5 shrink-0 text-secondary" /> : <CloudOff className="size-3.5 shrink-0 text-primary" />}
+        {online ? "Funciona sem internet: as vendas sobem ao reconectar." : "Sem internet: o PIN é conferido no próprio aparelho."}
+      </p>
     </div>
   );
 }
@@ -173,10 +161,3 @@ function safeGet(key: string): string | null {
   }
 }
 
-function LoginHint() {
-  return (
-    <p className="flex items-center justify-center gap-1.5 text-center text-label-sm text-on-surface-variant">
-      <LogIn className="size-3.5" /> Cada sócio entra com o próprio PIN.
-    </p>
-  );
-}

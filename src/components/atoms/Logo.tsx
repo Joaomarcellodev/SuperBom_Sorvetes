@@ -28,8 +28,9 @@ export function Logo({
       height={height}
       decoding="async"
       draggable={false}
-      className={cn("shrink-0 select-none object-contain", className)}
-      style={{ height, width: "auto" }}
+      // Altura via variável CSS: quem usa pode trocar com uma classe (ex.: em telas baixas).
+      className={cn("h-[var(--logo-h)] w-auto shrink-0 select-none object-contain", className)}
+      style={{ ["--logo-h" as string]: `${height}px` }}
     />
   );
 }
