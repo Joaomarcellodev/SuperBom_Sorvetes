@@ -117,6 +117,7 @@ export function SaleForm() {
   };
 
   return (
+    <>
     <form
       className="space-y-4"
       onSubmit={(e) => {
@@ -232,7 +233,9 @@ export function SaleForm() {
         </Button>
       </div>
 
-      <NewRouteModal open={newRouteOpen} onClose={() => setNewRouteOpen(false)} onCreated={(r) => chooseRoute(r.id)} />
     </form>
+    {/* Fora do <form> da venda: o envio do formulário da rota não pode disparar o salvar da venda. */}
+    <NewRouteModal open={newRouteOpen} onClose={() => setNewRouteOpen(false)} onCreated={(r) => chooseRoute(r.id)} />
+    </>
   );
 }

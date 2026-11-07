@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { IconButton } from "../atoms/IconButton";
 
@@ -44,7 +45,8 @@ export function Modal({
   }, [open]);
 
   if (!open) return null;
-  return (
+  // Portal no <body>: o modal não fica preso dentro de outro <form> nem de um card com overflow.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center">
       <div aria-hidden className="absolute inset-0 bg-surface-container-lowest/80 backdrop-blur-sm" onClick={onClose} />
       <div
@@ -64,6 +66,7 @@ export function Modal({
         <div className="space-y-4 overflow-y-auto">{children}</div>
         {footer && <div className="mt-5 flex gap-3">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

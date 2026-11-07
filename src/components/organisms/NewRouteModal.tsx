@@ -68,6 +68,8 @@ export function NewRouteModal({
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
+          // Eventos do React atravessam o portal: não deixa o envio chegar a formulários de fora.
+          e.stopPropagation();
           if (name.trim()) void submit();
         }}
       >
