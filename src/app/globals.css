@@ -3,7 +3,8 @@
 @import "@fontsource-variable/inter";
 
 /*
-  Tokens extraídos do DESIGN.md gerado no Stitch ("Superbom Sorvetes Internal PWA").
+  Tokens extraídos do DESIGN.md gerado no Stitch ("Superbom Sorvetes Internal PWA"),
+  hoje usado pela marca Maxbono Sorvetes.
   O app é dark-only: economiza bateria e funciona bem na câmara fria e no sol.
 */
 @theme {

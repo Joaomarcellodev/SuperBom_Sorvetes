@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Superbom Sorvetes",
-    short_name: "Superbom",
+    name: "Maxbono Sorvetes",
+    short_name: "Maxbono",
     description: "Registro offline de pacotes de sorvete vendidos por rota.",
     lang: "pt-BR",
     start_url: "/",
