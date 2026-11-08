@@ -6,7 +6,9 @@ import { ConfirmDialog } from "@/components/molecules/ConfirmDialog";
 import { PageHeading } from "@/components/molecules/PageHeading";
 import { FilterBar } from "@/components/organisms/FilterBar";
 import { SalesHistoryList } from "@/components/organisms/SalesHistoryList";
-import { useRoutes, useSales, useSellers } from "@/hooks/useData";
+import { usePrices, useRoutes, useSales, useSellers } from "@/hooks/useData";
+import { priceMap, saleAmount } from "@/lib/finance";
+import { formatMoney } from "@/lib/money";
 import { defaultFilters, matchesFilters } from "@/lib/filters";
 import { todayStr } from "@/lib/format";
 import { deleteSale } from "@/lib/repo";
@@ -19,6 +21,7 @@ export default function HistoryPage() {
   const sales = useSales();
   const routes = useRoutes();
   const sellers = useSellers();
+  const prices = usePrices();
   const { seller } = useSession();
   const { syncNow } = useSync();
   const { toast } = useToast();
@@ -32,7 +35,9 @@ export default function HistoryPage() {
     [sales, filters, today],
   );
 
+  const defaults = priceMap(prices);
   const packages = filtered.reduce((acc, s) => acc + s.total, 0);
+  const amount = filtered.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
 
   const confirmDelete = async () => {
     if (!toDelete) return;
@@ -47,7 +52,11 @@ export default function HistoryPage() {
     <>
       <PageHeading
         title="Histórico"
-        description={sales ? `${packages} ${packages === 1 ? "pacote" : "pacotes"} em ${filtered.length} ${filtered.length === 1 ? "venda" : "vendas"}` : undefined}
+        description={
+          sales
+            ? `${packages} ${packages === 1 ? "pacote" : "pacotes"} em ${filtered.length} ${filtered.length === 1 ? "venda" : "vendas"} · ${formatMoney(amount)}`
+            : undefined
+        }
       />
       <FilterBar value={filters} onChange={setFilters} routes={routes} sellers={sellers} />
       {sales === undefined ? (
@@ -61,6 +70,7 @@ export default function HistoryPage() {
           routes={routes ?? []}
           sellers={sellers ?? []}
           currentSellerId={seller?.id}
+          defaults={defaults}
           onDelete={setToDelete}
         />
       )}

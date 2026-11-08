@@ -13,9 +13,12 @@ export function SaleListItem({
   sellerName,
   isMine,
   timeStyle = "relative",
+  amount,
   onDelete,
 }: {
   sale: Sale;
+  /** valor da venda já formatado ("R$ 45,00") */
+  amount?: string;
   routeName: string;
   sellerName: string;
   isMine?: boolean;
@@ -26,16 +29,17 @@ export function SaleListItem({
   const pending = sale.dirty === 1;
   return (
     <Card className="flex flex-col gap-1">
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-display text-headline-sm">{sale.pointName || routeName}</p>
           <p className="mt-0.5 text-body-sm text-on-surface-variant">
             <span className="font-semibold text-on-surface">{sale.total} {sale.total === 1 ? "pacote" : "pacotes"}</span>{" "}
             <span className="text-secondary">({describeItems(sale.items)})</span>
           </p>
+          {amount && <p className="tabular mt-0.5 text-label-lg text-on-surface">{amount}</p>}
           {sale.pointName && <p className="mt-0.5 truncate text-body-sm text-outline">{routeName}</p>}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-3">
           {pending ? (
             <Badge tone="primary">
               <StatusDot tone="primary" pulse size="sm" /> Pendente
