@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { getDb, getMeta, META_LAST_SYNC } from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { syncAll } from "@/lib/sync";
+import { useToast } from "./ToastProvider";
 
 export interface PendingInfo {
   /** vendas (inclui exclusões) aguardando envio */
@@ -41,7 +42,20 @@ const friendlyError = (e: unknown): string => {
   return msg;
 };
 
+const records = (n: number) => `${n} ${n === 1 ? "registro" : "registros"}`;
+
+/** Aviso na tela quando o banco do aparelho e o da nuvem trocaram algo (rodada sem novidade não avisa). */
+function syncNotice(sent: number, received: number): { title: string; description: string } | null {
+  if (sent > 0 && received > 0) {
+    return { title: "Sincronizado com a nuvem", description: `${records(sent)} enviados e ${records(received)} recebidos do sócio.` };
+  }
+  if (sent > 0) return { title: "Salvo na nuvem", description: `${records(sent)} deste aparelho já estão no servidor.` };
+  if (received > 0) return { title: "Novidades do sócio", description: `${records(received)} recebidos da nuvem.` };
+  return null;
+}
+
 export function SyncProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [justSynced, setJustSynced] = useState(false);
@@ -78,11 +92,17 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     running.current = true;
     setSyncing(true);
     setError(null);
+    let sent = 0;
+    let received = 0;
     try {
       do {
         again.current = false;
-        await syncAll();
+        const result = await syncAll();
+        sent += result.sent;
+        received += result.received;
       } while (again.current);
+      const notice = syncNotice(sent, received);
+      if (notice) toast({ ...notice, tone: "success" });
       setJustSynced(true);
       setTimeout(() => setJustSynced(false), 2500);
     } catch (e) {
@@ -91,7 +111,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       running.current = false;
       setSyncing(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     setOnline(navigator.onLine !== false);
