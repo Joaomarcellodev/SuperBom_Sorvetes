@@ -40,16 +40,6 @@ cp .env.local.example .env.local
 
 Preencha com **Project URL** e **publishable key** (Settings → API Keys). O nome antigo `NEXT_PUBLIC_SUPABASE_ANON_KEY` também funciona.
 
-### PIX
-
-| Variável | O que é |
-|---|---|
-| `NEXT_PUBLIC_PIX_KEY` | chave que recebe os pagamentos. Celular no formato `+55DDDNUMERO` |
-| `NEXT_PUBLIC_PIX_NAME` | nome do recebedor no código PIX (até 25 letras) |
-| `NEXT_PUBLIC_PIX_CITY` | cidade do recebedor (até 15 letras) |
-
-O QR Code e o copia e cola são **PIX estáticos** gerados no aparelho (padrão BR Code do Banco Central), com o valor da venda preenchido. Não há confirmação automática: quem vende confere o pagamento no app do banco e toca em **Recebi**.
-
 > As variáveis `NEXT_PUBLIC_*` entram no código no momento do build: no deploy, cadastre-as **antes** do primeiro build.
 
 ## 3. Rodar
@@ -78,6 +68,7 @@ Para instalar no celular e usar offline, o app precisa estar em **HTTPS** (ou `l
 - Cada venda guarda o preço usado. Vendas de antes do financeiro usam o preço padrão atual.
 - Dinheiro é sempre guardado em **centavos inteiros**.
 - Cada venda guarda a **forma de pagamento**. "Pagar depois" vira pendência da rota (`payment_status = 'pendente'`) até alguém tocar em **Receber**; vendas antigas contam como pagas.
+- O **PIX** usa a chave fixa em `src/lib/pix.ts` (constante `PIX`). O QR Code e o copia e cola são PIX estáticos gerados no aparelho (padrão BR Code do Banco Central), com o valor da venda preenchido. Não há confirmação automática: quem vende confere no app do banco e toca em **Recebi**.
 
 ## 6. Marca e ícones
 

@@ -12,30 +12,12 @@ export interface PixConfig {
   city: string;
 }
 
-/** Chave e recebedor vêm do .env.local (veja .env.local.example). */
-export function getPixConfig(): PixConfig | null {
-  const key = normalizePixKey(process.env.NEXT_PUBLIC_PIX_KEY ?? "");
-  if (!key) return null;
-  return {
-    key,
-    name: process.env.NEXT_PUBLIC_PIX_NAME || "MAXBONO SORVETES",
-    city: process.env.NEXT_PUBLIC_PIX_CITY || "TERESINA",
-  };
-}
-
-/**
- * Celular sem +55 vira "+55DDDNUMERO" (é assim que o PIX reconhece a chave telefone).
- * E-mail, CPF/CNPJ com pontuação e chave aleatória passam como estão.
- */
-export function normalizePixKey(raw: string): string {
-  const key = raw.trim();
-  if (!key) return "";
-  if (key.startsWith("+")) return `+${key.replace(/\D/g, "")}`;
-  const digits = key.replace(/\D/g, "");
-  // 11 dígitos começando com DDD + 9: celular.
-  if (/^\d{11}$/.test(key) && key[2] === "9") return `+55${digits}`;
-  return key;
-}
+/** PIX da distribuidora: chave telefone (86) 99512-0533. */
+export const PIX: PixConfig = {
+  key: "+5586995120533",
+  name: "MAXBONO SORVETES",
+  city: "TERESINA",
+};
 
 const field = (id: string, value: string): string => `${id}${String(value.length).padStart(2, "0")}${value}`;
 

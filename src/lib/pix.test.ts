@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPixPayload, crc16, normalizePixKey } from "./pix";
+import { PIX, buildPixPayload, crc16 } from "./pix";
 
 describe("PIX", () => {
   it("gera o exemplo oficial do manual do BR Code", () => {
@@ -22,10 +22,7 @@ describe("PIX", () => {
     expect(payload).toContain("6015Sao Raimundo No");
   });
 
-  it("celular sem +55 vira chave telefone", () => {
-    expect(normalizePixKey("86995120533")).toBe("+5586995120533");
-    expect(normalizePixKey("+55 (86) 99512-0533")).toBe("+5586995120533");
-    expect(normalizePixKey("contato@maxbono.com")).toBe("contato@maxbono.com");
-    expect(normalizePixKey("123.456.789-09")).toBe("123.456.789-09");
+  it("usa a chave telefone da distribuidora", () => {
+    expect(buildPixPayload({ ...PIX, amountCents: 1000 })).toContain("0114+5586995120533");
   });
 });
