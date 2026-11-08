@@ -3,6 +3,7 @@ import { buildDailySummary, buildSalesCsv } from "./export";
 import { defaultFilters, matchesFilters, periodStart } from "./filters";
 import { amountFor, computeFinance, incomeDate, priceMap, saleAmount } from "./finance";
 import { formatMoney } from "./money";
+import { paymentDescription } from "./payment";
 import { buildBuckets, granularityFor, niceScale } from "./series";
 import { computeDashboard } from "./stats";
 import type { Expense, Route, Sale, Seller } from "./types";
@@ -182,5 +183,21 @@ describe("exportação", () => {
     const text = buildDailySummary(TODAY, [mk({}), paidToday], routes, prices);
     expect(text).toContain(`✅ Pendências antigas recebidas hoje: ${formatMoney(2500)}`);
     expect(text).toContain(`*Total: 10 pacotes · ${formatMoney(2500)}*`);
+  });
+});
+
+describe("pendências", () => {
+  it("filtro de pagamento separa a receber e pagas", () => {
+    const f = { ...defaultFilters("all"), payment: "pendente" as const };
+    expect(matchesFilters({ date: TODAY, payment: "pendente" }, f, TODAY)).toBe(true);
+    expect(matchesFilters({ date: TODAY, payment: "pago" }, f, TODAY)).toBe(false);
+    expect(matchesFilters({ date: TODAY }, f, TODAY)).toBe(true); // telas sem o filtro não são afetadas
+    expect(matchesFilters({ date: TODAY, payment: "pago" }, { ...f, payment: "pago" }, TODAY)).toBe(true);
+  });
+  it("mostra quando a pendência foi paga", () => {
+    expect(paymentDescription({ saleDate: "2026-11-01", paymentMethod: "pix", paidAt: "2026-11-07T15:05:00" })).toBe(
+      "Paga em 07/11/2026 às 15:05 · PIX",
+    );
+    expect(paymentDescription({ saleDate: TODAY, paymentMethod: "dinheiro", paidAt: null })).toBe("Dinheiro");
   });
 });

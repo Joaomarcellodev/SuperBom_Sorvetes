@@ -1,4 +1,4 @@
-import { hasUnitPrices } from "./finance";
+import { hasUnitPrices, incomeDate } from "./finance";
 import { formatShortDate, formatTime } from "./format";
 import { formatMoney } from "./money";
 import { paymentMethodLabel } from "./payment";
@@ -28,7 +28,7 @@ export function receiptLines(sale: Sale, defaults: Record<ProductId, number>) {
 /** Situação do pagamento como aparece no recibo. */
 export function receiptPayment(sale: Sale): string {
   if (sale.paymentStatus === "pendente") return "A receber (pendente)";
-  if (sale.paidAt) return `Pago em ${formatShortDate(sale.paidAt.slice(0, 10))} (${paymentMethodLabel(sale.paymentMethod)})`;
+  if (sale.paidAt) return `Pago em ${formatShortDate(incomeDate(sale))} (${paymentMethodLabel(sale.paymentMethod)})`;
   return sale.paymentMethod ? `Pago (${paymentMethodLabel(sale.paymentMethod)})` : "Pago";
 }
 

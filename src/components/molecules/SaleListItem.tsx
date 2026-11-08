@@ -4,7 +4,7 @@ import { Badge } from "../atoms/Badge";
 import { Card } from "../atoms/Card";
 import { IconButton } from "../atoms/IconButton";
 import { StatusDot } from "../atoms/StatusDot";
-import { isOpenDebt, paymentMethodLabel } from "@/lib/payment";
+import { isOpenDebt, paymentDescription } from "@/lib/payment";
 import { describeItems } from "@/lib/products";
 import { formatRelative, formatTime } from "@/lib/format";
 import type { Sale } from "@/lib/types";
@@ -66,10 +66,7 @@ export function SaleListItem({
           {isOpenDebt(sale) ? (
             <Badge tone="danger">A receber</Badge>
           ) : sale.paymentMethod ? (
-            <Badge tone="neutral">
-              {paymentMethodLabel(sale.paymentMethod)}
-              {sale.paidAt ? " · pendência paga" : ""}
-            </Badge>
+            <Badge tone={sale.paidAt ? "secondary" : "neutral"}>{paymentDescription(sale)}</Badge>
           ) : (
             <span />
           )}
