@@ -10,19 +10,14 @@ import { usePrices, useSales } from "@/hooks/useData";
 import { priceMap, saleAmount } from "@/lib/finance";
 import { formatDayLabel } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
-import { isOpenDebt, paymentMethodLabel } from "@/lib/payment";
+import { isOpenDebt } from "@/lib/payment";
 import { describeItems } from "@/lib/products";
-import { settleSale } from "@/lib/repo";
 import type { Sale } from "@/lib/types";
-import { useSync } from "@/providers/SyncProvider";
-import { useToast } from "@/providers/ToastProvider";
 
 /** Quem levou e ainda não pagou nesta rota: aparece ao escolher a rota, para cobrar na passada seguinte. */
 export function PendingPayments({ routeId }: { routeId: string }) {
   const sales = useSales();
   const prices = usePrices();
-  const { syncNow } = useSync();
-  const { toast } = useToast();
   const [receiving, setReceiving] = useState<Sale | null>(null);
 
   const defaults = priceMap(prices);
@@ -30,15 +25,6 @@ export function PendingPayments({ routeId }: { routeId: string }) {
   if (open.length === 0) return null;
 
   const total = open.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
-
-  const confirm = async (method: Parameters<typeof settleSale>[1]) => {
-    if (!receiving) return;
-    const sale = receiving;
-    setReceiving(null);
-    await settleSale(sale.id, method);
-    toast({ title: "Pendência recebida", description: `${sale.pointName || "Cliente"} pagou ${formatMoney(saleAmount(sale, defaults))} (${paymentMethodLabel(method)}).` });
-    void syncNow();
-  };
 
   return (
     <Card className="space-y-3" aria-label="Pendências desta rota">
@@ -66,14 +52,7 @@ export function PendingPayments({ routeId }: { routeId: string }) {
           </li>
         ))}
       </ul>
-      <ReceivePaymentModal
-        open={receiving !== null}
-        title={receiving?.pointName || "Cliente sem nome"}
-        details={receiving ? `${formatDayLabel(receiving.saleDate)} · ${describeItems(receiving.items)}` : ""}
-        amountCents={receiving ? saleAmount(receiving, defaults) : 0}
-        onConfirm={(m) => void confirm(m)}
-        onClose={() => setReceiving(null)}
-      />
+      <ReceivePaymentModal sale={receiving} defaults={defaults} onClose={() => setReceiving(null)} />
     </Card>
   );
 }
