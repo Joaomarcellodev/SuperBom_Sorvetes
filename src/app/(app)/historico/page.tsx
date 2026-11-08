@@ -8,8 +8,9 @@ import { FilterBar } from "@/components/organisms/FilterBar";
 import { ReceivePaymentModal } from "@/components/organisms/ReceivePaymentModal";
 import { SalesHistoryList } from "@/components/organisms/SalesHistoryList";
 import { usePrices, useRoutes, useSales, useSellers } from "@/hooks/useData";
-import { priceMap, receivedAmount } from "@/lib/finance";
+import { isOpenDebt, priceMap, receivedAmount } from "@/lib/finance";
 import { formatMoney } from "@/lib/money";
+import { openDebtCents } from "@/lib/payment";
 import { defaultFilters, matchesFilters } from "@/lib/filters";
 import { todayStr } from "@/lib/format";
 import { deleteSale } from "@/lib/repo";
@@ -33,7 +34,11 @@ export default function HistoryPage() {
 
   const today = todayStr();
   const filtered = useMemo(
-    () => (sales ?? []).filter((s) => matchesFilters({ date: s.saleDate, routeId: s.routeId, sellerId: s.sellerId }, filters, today)),
+    () => (sales ?? []).filter((s) => matchesFilters(
+          { date: s.saleDate, routeId: s.routeId, sellerId: s.sellerId, payment: isOpenDebt(s) ? "pendente" : "pago" },
+          filters,
+          today,
+        )),
     [sales, filters, today],
   );
 
@@ -41,6 +46,7 @@ export default function HistoryPage() {
   const packages = filtered.reduce((acc, s) => acc + s.total, 0);
   // Pendência em aberto não soma até ser recebida.
   const amount = filtered.reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
+  const owed = openDebtCents(filtered, defaults);
 
   const confirmDelete = async () => {
     if (!toDelete) return;
@@ -57,11 +63,11 @@ export default function HistoryPage() {
         title="Histórico"
         description={
           sales
-            ? `${packages} ${packages === 1 ? "pacote" : "pacotes"} em ${filtered.length} ${filtered.length === 1 ? "venda" : "vendas"} · ${formatMoney(amount)}`
+            ? `${packages} ${packages === 1 ? "pacote" : "pacotes"} em ${filtered.length} ${filtered.length === 1 ? "venda" : "vendas"} · ${formatMoney(amount)}${owed > 0 ? ` · ${formatMoney(owed)} a receber` : ""}`
             : undefined
         }
       />
-      <FilterBar value={filters} onChange={setFilters} routes={routes} sellers={sellers} />
+      <FilterBar value={filters} onChange={setFilters} routes={routes} sellers={sellers} paymentFilter />
       {sales === undefined ? (
         <div className="space-y-2">
           <Skeleton className="h-28" />
