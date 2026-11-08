@@ -11,6 +11,7 @@ import {
   saveExpense,
   saveSale,
   setProductPrice,
+  settleSale,
   updateRoute,
   updateSellerAvatar,
   updateSellerRole,
@@ -141,6 +142,91 @@ describe("vendas", () => {
   });
 });
 
+describe("pagamento e pendências", () => {
+  it("venda paga na hora sobe com a forma de pagamento", async () => {
+    const route = await createRoute("Centro", []);
+    const s = await sale(route.id, { paymentMethod: "pix" });
+    await syncAll();
+    expect(fake.rows("sales")[0]).toMatchObject({ id: s.id, payment_status: "pago", payment_method: "pix", paid_at: null });
+    expect((await getDb().sales.get(s.id))?.dirty).toBe(0);
+  });
+
+  it("sem forma informada conta como dinheiro", async () => {
+    const route = await createRoute("Centro", []);
+    const s = await sale(route.id);
+    expect(s).toMatchObject({ paymentStatus: "pago", paymentMethod: "dinheiro" });
+  });
+
+  it("pendência sobe em aberto e, quitada depois, sobe como paga", async () => {
+    const route = await createRoute("Centro", []);
+    const s = await sale(route.id, { paymentMethod: null });
+    expect(s).toMatchObject({ paymentStatus: "pendente", paymentMethod: null });
+    await syncAll();
+    expect(fake.rows("sales")[0]).toMatchObject({ payment_status: "pendente", payment_method: null });
+
+    await settleSale(s.id, "dinheiro");
+    expect((await getDb().sales.get(s.id))?.dirty).toBe(1);
+    await syncAll();
+    expect(fake.rows("sales")[0]).toMatchObject({ payment_status: "pago", payment_method: "dinheiro" });
+    expect(fake.rows("sales")[0]?.paid_at).toBeTruthy();
+    expect((await getDb().sales.get(s.id))?.dirty).toBe(0);
+  });
+
+  it("baixa a pendência quitada pelo sócio", async () => {
+    fake.seed("routes", [{ id: "r1", name: "Sul", cities: [], created_at: "2026-11-01T10:00:00Z", deleted_at: null }]);
+    const row = {
+      id: "s1",
+      route_id: "r1",
+      point_name: "Bar",
+      seller_id: PEDRO,
+      sale_date: "2026-11-06",
+      note: "",
+      items: { simples: 5 },
+      total: 5,
+      created_at: "2026-11-06T11:00:00Z",
+      deleted_at: null,
+      payment_status: "pendente",
+      payment_method: null,
+      paid_at: null,
+    };
+    fake.seed("sales", [row]);
+    await syncAll();
+    expect(await getDb().sales.get("s1")).toMatchObject({ paymentStatus: "pendente", paymentMethod: null });
+
+    await fake.client.from("sales").upsert({ ...row, payment_status: "pago", payment_method: "pix", paid_at: "2026-11-07T15:00:00Z" });
+    await syncAll();
+    expect(await getDb().sales.get("s1")).toMatchObject({ paymentStatus: "pago", paymentMethod: "pix", paidAt: "2026-11-07T15:00:00Z" });
+  });
+
+  it("venda antiga, sem os campos, chega como paga", async () => {
+    fake.seed("routes", [{ id: "r1", name: "Sul", cities: [], created_at: "2026-11-01T10:00:00Z", deleted_at: null }]);
+    fake.seed("sales", [
+      { id: "old", route_id: "r1", point_name: "", seller_id: PEDRO, sale_date: "2026-11-01", note: "", items: { simples: 1 }, total: 1, created_at: "2026-11-01T11:00:00Z", deleted_at: null },
+    ]);
+    await syncAll();
+    expect(await getDb().sales.get("old")).toMatchObject({ paymentStatus: "pago", paymentMethod: null });
+  });
+});
+
+describe("aviso de sincronização", () => {
+  it("conta o que este aparelho enviou e o que veio do sócio, sem contar o próprio envio de volta", async () => {
+    await syncAll();
+    const route = await createRoute("Centro", []);
+    await sale(route.id);
+    await saveExpense({ description: "Gasolina", category: "combustivel", amountCents: 5000, expenseDate: "2026-11-07", sellerId: JOAO, note: "" });
+    const first = await syncAll();
+    expect(first).toMatchObject({ sent: 2, received: 0 });
+
+    const nothing = await syncAll();
+    expect(nothing).toMatchObject({ sent: 0, received: 0 });
+
+    fake.seed("sales", [
+      { id: "s-pedro", route_id: route.id, point_name: "", seller_id: PEDRO, sale_date: "2026-11-07", note: "", items: { simples: 2 }, total: 2, created_at: "2026-11-07T13:00:00Z", deleted_at: null },
+    ]);
+    expect(await syncAll()).toMatchObject({ sent: 0, received: 1 });
+  });
+});
+
 describe("migração faltando", () => {
   it("sem a 0003: os pacotes sobem, a venda fica pendente e o erro aparece só no fim", async () => {
     await server({ missingColumns: { sales: ["unit_prices", "amount_cents"] } });
@@ -153,6 +239,17 @@ describe("migração faltando", () => {
     expect(fake.rows("sales")[0]).not.toHaveProperty("amount_cents");
     expect((await getDb().sales.get(s.id))?.dirty).toBe(1); // reenvia o valor quando o banco for atualizado
     expect(await getDb().routes.get("r-pedro")).toBeTruthy(); // e mesmo assim baixou o que o sócio fez
+  });
+
+  it("sem a 0007: a venda sobe com o valor e fica pendente para reenviar o pagamento", async () => {
+    await server({ missingColumns: { sales: ["payment_status", "payment_method", "paid_at"] } });
+    const route = await createRoute("Centro", []);
+    const s = await sale(route.id, { paymentMethod: null });
+
+    await expect(syncAll()).rejects.toThrow(/payment_status|payment_method|paid_at/);
+    expect(fake.rows("sales")[0]).toMatchObject({ id: s.id, amount_cents: 3900 });
+    expect(fake.rows("sales")[0]).not.toHaveProperty("payment_status");
+    expect((await getDb().sales.get(s.id))?.dirty).toBe(1);
   });
 
   it("sem a 0004: editar rota sobe, excluir fica pendente", async () => {
