@@ -1,6 +1,20 @@
 import { getDb, getMeta, setMeta, META_EXPENSES_CURSOR, META_LAST_SYNC, META_SALES_CURSOR } from "./db";
 import { getSupabase } from "./supabase";
-import type { Expense, ExpenseCategory, ProductId, ProductPrice, Route, RoutePoint, Sale, SaleItems, Seller, UnitPrices } from "./types";
+import { saleSignature } from "./payment";
+import type {
+  Expense,
+  ExpenseCategory,
+  PaymentMethod,
+  PaymentStatus,
+  ProductId,
+  ProductPrice,
+  Route,
+  RoutePoint,
+  Sale,
+  SaleItems,
+  Seller,
+  UnitPrices,
+} from "./types";
 
 /**
  * Sincronização em duas etapas, sempre nesta ordem:
@@ -47,6 +61,10 @@ interface RemoteSale {
   /** só existem depois da migração 0003 */
   unit_prices?: UnitPrices;
   amount_cents?: number;
+  /** só existem depois da migração 0007 */
+  payment_status?: PaymentStatus;
+  payment_method?: PaymentMethod | null;
+  paid_at?: string | null;
 }
 interface RemoteExpense {
   id: string;
@@ -78,6 +96,10 @@ function fail(error: { message: string } | null): asserts error is null {
 export interface SyncResult {
   pushed: number;
   pulled: number;
+  /** vendas e gastos deste aparelho que chegaram ao servidor nesta rodada (para o aviso na tela) */
+  sent: number;
+  /** vendas e gastos novos ou alterados que vieram de outro aparelho nesta rodada */
+  received: number;
 }
 
 export async function syncAll(): Promise<SyncResult> {
@@ -87,6 +109,8 @@ export async function syncAll(): Promise<SyncResult> {
   const db = getDb();
   let pushed = 0;
   let pulled = 0;
+  let sent = 0;
+  let received = 0;
   /** Falha de uma parte opcional (ex.: migração ainda não rodada): avisada só depois de baixar tudo. */
   let late: Error | null = null;
 
@@ -139,31 +163,35 @@ export async function syncAll(): Promise<SyncResult> {
       created_at: s.createdAt,
       deleted_at: s.deletedAt,
     }));
-    let { error } = await sb
-      .from("sales")
-      .upsert(base.map((row, k) => ({ ...row, unit_prices: batch[k]?.unitPrices ?? {}, amount_cents: batch[k]?.amountCents ?? 0 })));
-    const withoutValue = isSchemaError(error);
-    if (withoutValue) {
-      // Migração 0003 ainda não rodou: os pacotes sobem mesmo assim, mas a venda segue pendente
-      // para reenviar o valor quando o banco for atualizado.
+    const withValue = base.map((row, k) => ({ ...row, unit_prices: batch[k]?.unitPrices ?? {}, amount_cents: batch[k]?.amountCents ?? 0 }));
+    const full = withValue.map((row, k) => ({
+      ...row,
+      payment_status: batch[k]?.paymentStatus ?? "pago",
+      payment_method: batch[k]?.paymentMethod ?? null,
+      paid_at: batch[k]?.paidAt ?? null,
+    }));
+    let { error } = await sb.from("sales").upsert(full);
+    const incomplete = isSchemaError(error);
+    if (incomplete) {
+      // Migração 0007 (pagamento) ou 0003 (valor) ainda não rodou: os pacotes sobem mesmo assim,
+      // mas a venda segue pendente para reenviar o resto quando o banco for atualizado.
       late ??= new Error(error!.message);
-      ({ error } = await sb.from("sales").upsert(base));
+      ({ error } = await sb.from("sales").upsert(withValue));
+      if (isSchemaError(error)) ({ error } = await sb.from("sales").upsert(base));
     }
     fail(error);
-    if (withoutValue) {
-      pushed += batch.length;
-      continue;
-    }
+    pushed += batch.length;
+    if (incomplete) continue;
     // Só marca como enviada se ninguém mexeu na venda enquanto o envio rodava
-    // (ex.: apagar a venda logo depois de tocar em "Sincronizar").
-    const sent = new Map(batch.map((s) => [s.id, s.deletedAt]));
+    // (ex.: apagar a venda ou quitar a pendência logo depois de tocar em "Sincronizar").
+    const signatures = new Map(batch.map((s) => [s.id, saleSignature(s)]));
     await db.sales
       .where("id")
       .anyOf(batch.map((s) => s.id))
       .modify((current) => {
-        if (current.deletedAt === sent.get(current.id)) current.dirty = 0;
+        if (signatures.get(current.id) === saleSignature(current)) current.dirty = 0;
       });
-    pushed += batch.length;
+    sent += batch.length;
   }
 
   // Fotos de perfil (depois das vendas: se a migração 0002 ainda não rodou, as vendas já subiram).
@@ -185,7 +213,9 @@ export async function syncAll(): Promise<SyncResult> {
   }
 
   try {
-    pushed += await pushFinance(sb, db);
+    const finance = await pushFinance(sb, db);
+    pushed += finance.pushed;
+    sent += finance.expenses;
   } catch (e) {
     late ??= e instanceof Error ? e : new Error(String(e));
   }
@@ -270,14 +300,15 @@ export async function syncAll(): Promise<SyncResult> {
 
     if (rows.length) {
       await db.transaction("rw", db.sales, async () => {
-        const localDirty = new Set(
-          await db.sales.where("id").anyOf(rows.map((r) => r.id)).filter((s) => s.dirty === 1).primaryKeys(),
-        );
+        const local = new Map((await db.sales.bulkGet(rows.map((r) => r.id))).flatMap((s) => (s ? [[s.id, s] as const] : [])));
         const sales: Sale[] = rows
-          .filter((r) => !localDirty.has(r.id))
+          .filter((r) => local.get(r.id)?.dirty !== 1)
           .map((r) => ({
             unitPrices: r.unit_prices ?? {},
             amountCents: r.amount_cents ?? 0,
+            paymentStatus: r.payment_status ?? "pago",
+            paymentMethod: r.payment_method ?? null,
+            paidAt: r.paid_at ?? null,
             id: r.id,
             routeId: r.route_id,
             pointName: r.point_name,
@@ -290,6 +321,11 @@ export async function syncAll(): Promise<SyncResult> {
             deletedAt: r.deleted_at,
             dirty: 0,
           }));
+        // Conta só o que é novidade para este aparelho (o que ele mesmo enviou volta igual).
+        received += sales.filter((s) => {
+          const before = local.get(s.id);
+          return !before || saleSignature(before) !== saleSignature(s) || before.total !== s.total;
+        }).length;
         await db.sales.bulkPut(sales);
       });
       pulled += rows.length;
@@ -301,22 +337,25 @@ export async function syncAll(): Promise<SyncResult> {
   if (maxSeen) await setMeta(META_SALES_CURSOR, maxSeen);
 
   try {
-    pulled += await pullFinance(sb, db);
+    const finance = await pullFinance(sb, db);
+    pulled += finance.pulled;
+    received += finance.expenses;
   } catch (e) {
     late ??= e instanceof Error ? e : new Error(String(e));
   }
 
   await setMeta(META_LAST_SYNC, new Date().toISOString());
   if (late) throw late;
-  return { pushed, pulled };
+  return { pushed, pulled, sent, received };
 }
 
 type Sb = NonNullable<ReturnType<typeof getSupabase>>;
 type Db = ReturnType<typeof getDb>;
 
 /** Envia preços padrão e gastos criados/apagados no aparelho. */
-async function pushFinance(sb: Sb, db: Db): Promise<number> {
+async function pushFinance(sb: Sb, db: Db): Promise<{ pushed: number; expenses: number }> {
   let pushed = 0;
+  let expenses = 0;
 
   const dirtyPrices = await db.prices.where("dirty").equals(1).toArray();
   if (dirtyPrices.length) {
@@ -359,13 +398,15 @@ async function pushFinance(sb: Sb, db: Db): Promise<number> {
         if (current.deletedAt === sent.get(current.id)) current.dirty = 0;
       });
     pushed += batch.length;
+    expenses += batch.length;
   }
-  return pushed;
+  return { pushed, expenses };
 }
 
 /** Baixa a tabela de preços (inteira, é pequena) e os gastos novos desde a última vez. */
-async function pullFinance(sb: Sb, db: Db): Promise<number> {
+async function pullFinance(sb: Sb, db: Db): Promise<{ pulled: number; expenses: number }> {
   let pulled = 0;
+  let received = 0;
 
   const { data: priceRows, error: priceError } = await sb.from("product_prices").select("product_id,price_cents");
   fail(priceError);
@@ -388,11 +429,9 @@ async function pullFinance(sb: Sb, db: Db): Promise<number> {
     const rows = (data ?? []) as RemoteExpense[];
     if (rows.length) {
       await db.transaction("rw", db.expenses, async () => {
-        const localDirty = new Set(
-          await db.expenses.where("id").anyOf(rows.map((r) => r.id)).filter((e) => e.dirty === 1).primaryKeys(),
-        );
+        const local = new Map((await db.expenses.bulkGet(rows.map((r) => r.id))).flatMap((e) => (e ? [[e.id, e] as const] : [])));
         const expenses: Expense[] = rows
-          .filter((r) => !localDirty.has(r.id))
+          .filter((r) => local.get(r.id)?.dirty !== 1)
           .map((r) => ({
             id: r.id,
             description: r.description,
@@ -405,6 +444,10 @@ async function pullFinance(sb: Sb, db: Db): Promise<number> {
             deletedAt: r.deleted_at,
             dirty: 0,
           }));
+        received += expenses.filter((e) => {
+          const before = local.get(e.id);
+          return !before || before.deletedAt !== e.deletedAt || before.amountCents !== e.amountCents;
+        }).length;
         await db.expenses.bulkPut(expenses);
       });
       pulled += rows.length;
@@ -414,5 +457,5 @@ async function pullFinance(sb: Sb, db: Db): Promise<number> {
     if (rows.length < PAGE) break;
   }
   if (maxSeen) await setMeta(META_EXPENSES_CURSOR, maxSeen);
-  return pulled;
+  return { pulled, expenses: received };
 }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CircleCheck, NotebookPen, Pencil, Tag, TriangleAlert, UserRound, Users, WifiOff } from "lucide-react";
+import { CircleCheck, HandCoins, NotebookPen, Pencil, QrCode, Tag, TriangleAlert, UserRound, Users, WifiOff, X } from "lucide-react";
 import { Badge } from "../atoms/Badge";
 import { Button } from "../atoms/Button";
 import { Card } from "../atoms/Card";
@@ -14,7 +14,12 @@ import { Disclosure } from "../molecules/Disclosure";
 import { Field } from "../molecules/Field";
 import { ProductCard } from "../molecules/ProductCard";
 import { SectionHeader } from "../molecules/SectionHeader";
+import { SegmentedControl } from "../molecules/SegmentedControl";
+import { IconButton } from "../atoms/IconButton";
 import { SellerToggle, type SellerOption } from "../molecules/SellerToggle";
+import { PendingPayments } from "./PendingPayments";
+import { PixModal } from "./PixModal";
+import { ReceiptButton } from "./ReceiptButton";
 import { RouteFormModal } from "./RouteFormModal";
 import { RouteSelector } from "./RouteSelector";
 import { useActiveRoutes, usePrices } from "@/hooks/useData";
@@ -22,13 +27,20 @@ import { amountFor, priceMap } from "@/lib/finance";
 import { formatMoney } from "@/lib/money";
 import { formatShortDate, todayStr } from "@/lib/format";
 import { PRODUCTS, emptyItems, sumItems } from "@/lib/products";
-import type { ProductId, UnitPrices } from "@/lib/types";
+import type { PaymentMethod, ProductId, Sale, UnitPrices } from "@/lib/types";
 import { saveSale } from "@/lib/repo";
 import { useSession } from "@/providers/SessionProvider";
 import { useSync } from "@/providers/SyncProvider";
 import { useToast } from "@/providers/ToastProvider";
 
 const LAST_ROUTE_KEY = "superbom.lastRoute";
+
+type PaymentChoice = PaymentMethod | "depois";
+const PAYMENT_OPTIONS: ReadonlyArray<{ id: PaymentChoice; label: string }> = [
+  { id: "dinheiro", label: "Dinheiro" },
+  { id: "pix", label: "PIX" },
+  { id: "depois", label: "Pagar depois" },
+];
 const firstName = (full: string) => full.split(" ")[0] ?? full;
 
 function readLastRoute(): string | null {
@@ -59,6 +71,10 @@ export function SaleForm() {
   const [editRouteOpen, setEditRouteOpen] = useState(false);
   /** preço ajustado só nesta venda (por produto); sem ajuste = preço padrão */
   const [priceOverride, setPriceOverride] = useState<UnitPrices>({});
+  const [payment, setPayment] = useState<PaymentChoice>("dinheiro");
+  const [pixOpen, setPixOpen] = useState(false);
+  /** última venda salva nesta tela: dá acesso rápido ao recibo */
+  const [lastSale, setLastSale] = useState<Sale | null>(null);
 
   const routeList = routes ?? [];
   // Rota escolhida > última rota usada neste aparelho > primeira da lista.
@@ -107,11 +123,26 @@ export function SaleForm() {
     setError(null);
     if (!routeId) return setError("Escolha ou crie uma rota antes de salvar.");
     if (total <= 0) return setError("Informe ao menos 1 pacote.");
+    if (payment === "depois" && !pointName.trim()) {
+      return setError("Para pagar depois, informe o cliente/ponto: é por ele que a pendência é cobrada.");
+    }
 
     setSaving(true);
     try {
-      await saveSale({ routeId, pointName, sellerId, saleDate, note, items: qty, unitPrices });
-      if (online && configured) {
+      const saved = await saveSale({
+        routeId,
+        pointName,
+        sellerId,
+        saleDate,
+        note,
+        items: qty,
+        unitPrices,
+        paymentMethod: payment === "depois" ? null : payment,
+      });
+      setLastSale(saved);
+      if (payment === "depois") {
+        toast({ title: "Pendência registrada", description: "Aparece nesta rota até o cliente pagar.", tone: "offline" });
+      } else if (online && configured) {
         toast({ title: "Venda salva!", description: "Enviando para o servidor.", tone: "success" });
       } else {
         toast({
@@ -122,6 +153,7 @@ export function SaleForm() {
       }
       setQty(emptyItems());
       setPriceOverride({});
+      setPayment("dinheiro");
       setPointName("");
       setNote("");
       void syncNow();
@@ -147,6 +179,30 @@ export function SaleForm() {
         </Banner>
       )}
 
+      {lastSale && (
+        <Card tone="raised" className="flex items-center gap-3">
+          <CircleCheck className="size-6 shrink-0 text-secondary" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-label-lg text-on-surface">Última venda: {lastSale.pointName || "sem cliente"}</p>
+            <p className="tabular text-body-sm text-on-surface-variant">
+              {lastSale.total} {lastSale.total === 1 ? "pacote" : "pacotes"} · {formatMoney(lastSale.amountCents ?? 0)}
+              {lastSale.paymentStatus === "pendente" ? " · a receber" : ""}
+            </p>
+          </div>
+          <ReceiptButton
+            sale={lastSale}
+            info={{
+              routeName: routeList.find((r) => r.id === lastSale.routeId)?.name ?? "",
+              sellerName: sellers.find((s) => s.id === lastSale.sellerId)?.name ?? "",
+              defaults,
+            }}
+          />
+          <IconButton label="Fechar" className="size-9 bg-transparent" onClick={() => setLastSale(null)}>
+            <X className="size-4" />
+          </IconButton>
+        </Card>
+      )}
+
       <RouteSelector
         routes={routeList}
         routeId={routeId}
@@ -156,6 +212,8 @@ export function SaleForm() {
         onNewRoute={() => setNewRouteOpen(true)}
         onEditRoute={() => setEditRouteOpen(true)}
       />
+
+      {routeId && <PendingPayments routeId={routeId} />}
 
       <Card className="space-y-4">
         <div className="space-y-2">
@@ -238,6 +296,22 @@ export function SaleForm() {
         )}
       </Card>
 
+      <Card className="space-y-3">
+        <Label>Pagamento</Label>
+        <SegmentedControl label="Forma de pagamento" options={PAYMENT_OPTIONS} value={payment} onChange={setPayment} />
+        {payment === "pix" && (
+          <Button variant="outline" fullWidth icon={<QrCode className="size-5" />} onClick={() => setPixOpen(true)}>
+            Mostrar QR Code do PIX ({formatMoney(amount)})
+          </Button>
+        )}
+        {payment === "depois" && (
+          <p className="flex items-start gap-2 rounded-control bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface-variant">
+            <HandCoins className="mt-0.5 size-4 shrink-0 text-primary" />
+            Fica nas pendências desta rota até o cliente pagar na próxima passada.
+          </p>
+        )}
+      </Card>
+
       {soldProducts.length > 0 && (
         <Disclosure icon={<Tag />} title="Preço por pacote nesta venda">
           <p className="text-body-sm text-on-surface-variant">Já vem com o preço padrão. Mude só se este cliente pagou diferente.</p>
@@ -291,6 +365,7 @@ export function SaleForm() {
       </div>
 
     </form>
+    <PixModal open={pixOpen} amountCents={amount} onClose={() => setPixOpen(false)} />
     {/* Fora do <form> da venda: o envio do formulário da rota não pode disparar o salvar da venda. */}
     <RouteFormModal open={newRouteOpen} onClose={() => setNewRouteOpen(false)} onSaved={(r) => chooseRoute(r.id)} />
     <RouteFormModal

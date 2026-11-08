@@ -38,6 +38,12 @@ export interface RoutePoint {
 /** Preço por pacote, em centavos, por produto. */
 export type UnitPrices = Partial<Record<ProductId, number>>;
 
+/** Como o cliente pagou. */
+export type PaymentMethod = "dinheiro" | "pix";
+
+/** "pendente" = o cliente levou e paga depois (pendência da rota). */
+export type PaymentStatus = "pago" | "pendente";
+
 export interface Sale {
   id: string;
   routeId: string;
@@ -53,6 +59,12 @@ export interface Sale {
   unitPrices?: UnitPrices;
   /** Valor da venda em centavos (0 em vendas antigas sem preço). */
   amountCents?: number;
+  /** Vendas antigas (sem o campo) contam como pagas. */
+  paymentStatus?: PaymentStatus;
+  /** Forma de pagamento. null = ainda não pago ou venda antiga. */
+  paymentMethod?: PaymentMethod | null;
+  /** Quando uma pendência foi quitada. null = paga na hora ou ainda em aberto. */
+  paidAt?: string | null;
   createdAt: string;
   deletedAt: string | null;
   dirty: 0 | 1;

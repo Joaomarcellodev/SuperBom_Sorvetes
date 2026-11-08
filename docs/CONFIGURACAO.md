@@ -14,6 +14,7 @@ Crie um projeto no [Supabase](https://supabase.com) e, em **SQL Editor → New q
 | `0004_route_soft_delete.sql` | `routes.deleted_at`: excluir rota sem perder as vendas dela |
 | `0005_seller_role_edit.sql` | libera o app para editar o **cargo** do sócio |
 | `0006_change_pin.sql` | função `change_seller_pin`: troca o PIN pelo app só se o PIN atual estiver certo |
+| `0007_sale_payment.sql` | forma de pagamento e pendências das vendas (`payment_status`, `payment_method`, `paid_at`) |
 
 Todos podem ser rodados de novo sem estragar nada. Se faltar uma migração, o app avisa **"Banco desatualizado"** e continua sincronizando os pacotes; o que depende da migração fica pendente no aparelho até ela ser aplicada.
 
@@ -66,6 +67,8 @@ Para instalar no celular e usar offline, o app precisa estar em **HTTPS** (ou `l
 - O **preço por pacote** de cada produto fica no fim da tela Financeiro. Ele vem preenchido em cada venda e pode ser ajustado só naquela venda.
 - Cada venda guarda o preço usado. Vendas de antes do financeiro usam o preço padrão atual.
 - Dinheiro é sempre guardado em **centavos inteiros**.
+- Cada venda guarda a **forma de pagamento**. "Pagar depois" vira pendência da rota (`payment_status = 'pendente'`) até alguém tocar em **Receber**; vendas antigas contam como pagas.
+- O **PIX** usa a chave fixa em `src/lib/pix.ts` (constante `PIX`). O QR Code e o copia e cola são PIX estáticos gerados no aparelho (padrão BR Code do Banco Central), com o valor da venda preenchido. Não há confirmação automática: quem vende confere no app do banco e toca em **Recebi**.
 
 ## 6. Marca e ícones
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownCircle, ArrowUpCircle, Info, Plus, Tag, Wallet } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, HandCoins, Info, Plus, Tag, Wallet } from "lucide-react";
 import { Button } from "@/components/atoms/Button";
 import { Card } from "@/components/atoms/Card";
 import { Banner } from "@/components/molecules/Banner";
@@ -18,7 +18,7 @@ import { FilterBar } from "@/components/organisms/FilterBar";
 import { PriceTable } from "@/components/organisms/PriceTable";
 import { useExpenses, usePrices, useSales, useSellers } from "@/hooks/useData";
 import { defaultFilters, matchesFilters, periodLabel, periodStart } from "@/lib/filters";
-import { computeFinance, priceMap, saleAmount } from "@/lib/finance";
+import { computeFinance, incomeDate, isOpenDebt, priceMap, receivedAmount, saleAmount } from "@/lib/finance";
 import { todayStr } from "@/lib/format";
 import { formatMoney, formatMoneyAxis } from "@/lib/money";
 import { deleteExpense } from "@/lib/repo";
@@ -50,19 +50,23 @@ export default function FinancePage() {
   const view = useMemo(() => {
     if (!sales || !expenses) return undefined;
     const defaults = priceMap(prices);
-    const s = sales.filter((x) => matchesFilters({ date: x.saleDate, sellerId: x.sellerId }, filters, today));
+    // Entradas pelo dia em que o dinheiro entrou; pendência em aberto não soma até ser recebida.
+    const s = sales.filter((x) => matchesFilters({ date: incomeDate(x), sellerId: x.sellerId }, filters, today));
     const e = expenses.filter((x) => matchesFilters({ date: x.expenseDate, sellerId: x.sellerId }, filters, today));
     const summary = computeFinance(s, e, defaults);
 
-    const dates = [...s.map((x) => x.saleDate), ...e.map((x) => x.expenseDate)].sort();
+    const dates = [...s.map((x) => incomeDate(x)), ...e.map((x) => x.expenseDate)].sort();
     const from = periodStart(filters.period, today) || dates[0] || today;
     const points = [
-      ...s.map((x) => ({ date: x.saleDate, createdAt: x.createdAt, v: [saleAmount(x, defaults), 0] })),
+      ...s.map((x) => ({ date: incomeDate(x), createdAt: x.paidAt ?? x.createdAt, v: [receivedAmount(x, defaults), 0] })),
       ...e.map((x) => ({ date: x.expenseDate, createdAt: x.createdAt, v: [0, x.amountCents] })),
     ];
     const { buckets } = buildBuckets(points, from, today, 2, (p) => p.v);
     const pricesMissing = Object.values(defaults).every((v) => v === 0) && s.length > 0;
-    return { summary, buckets, expenses: e, pricesMissing };
+    // A receber: todas as pendências em aberto, de qualquer data.
+    const debts = sales.filter((x) => isOpenDebt(x) && (!filters.sellerId || x.sellerId === filters.sellerId));
+    const receivable = { cents: debts.reduce((acc, x) => acc + saleAmount(x, defaults), 0), count: debts.length };
+    return { summary, buckets, expenses: e, pricesMissing, receivable };
   }, [sales, expenses, prices, filters, today]);
 
   const confirmDelete = async () => {
@@ -123,6 +127,14 @@ export default function FinancePage() {
               <StatTile icon={<ArrowDownCircle />} label="Entrou" value={formatMoney(s.incomeCents)} caption="vendas" />
               <StatTile icon={<ArrowUpCircle />} label="Gastou" value={formatMoney(s.expenseCents)} caption={`${view.expenses.length} ${view.expenses.length === 1 ? "gasto" : "gastos"}`} />
             </div>
+            {view.receivable.count > 0 && (
+              <StatTile
+                icon={<HandCoins />}
+                label="A receber"
+                value={formatMoney(view.receivable.cents)}
+                caption={`${view.receivable.count} ${view.receivable.count === 1 ? "pendência" : "pendências"} em aberto · entra no saldo quando for paga`}
+              />
+            )}
             {s.estimatedSales > 0 && (
               <p className="flex items-start gap-2 rounded-control bg-surface-container-low px-3 py-2 text-body-sm text-on-surface-variant">
                 <Info className="mt-0.5 size-4 shrink-0 text-secondary" />

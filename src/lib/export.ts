@@ -1,6 +1,9 @@
+import { incomeDate, receivedAmount, saleAmount } from "./finance";
 import { formatShortDate, formatTime } from "./format";
+import { formatMoney } from "./money";
+import { openDebtCents } from "./payment";
 import { PRODUCTS } from "./products";
-import type { Route, Sale, Seller } from "./types";
+import type { ProductId, Route, Sale, Seller } from "./types";
 
 const csvCell = (value: string | number): string => {
   const text = String(value);
@@ -53,23 +56,54 @@ export function downloadTextFile(filename: string, content: string, mime: string
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+const plural = (n: number) => `${n} ${n === 1 ? "pacote" : "pacotes"}`;
+
+/** Uma linha por produto vendido: "🍧 Picolé Simples: 12". */
+function productLines(list: Sale[], indent = ""): string[] {
+  return PRODUCTS.map((p) => ({ p, qty: list.reduce((acc, s) => acc + (s.items[p.id] ?? 0), 0) }))
+    .filter(({ qty }) => qty > 0)
+    .map(({ p, qty }) => `${indent}${p.emoji} ${p.name}: ${qty}`);
+}
+
 /** Texto de fechamento do dia, pronto para colar no WhatsApp. */
-export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[]): string {
+export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[], defaults: Record<ProductId, number>): string {
   const day = sales.filter((s) => s.saleDate === dateStr);
   const total = day.reduce((acc, s) => acc + s.total, 0);
-  const lines = [`🍦 *Maxbono Sorvetes — fechamento de ${formatShortDate(dateStr)}*`, "", `*Total: ${total} pacotes*`];
-
-  for (const p of PRODUCTS) {
-    const qty = day.reduce((acc, s) => acc + (s.items[p.id] ?? 0), 0);
-    lines.push(`• ${p.name}: ${qty}`);
-  }
+  // Valores em R$ só do que já foi pago; o que ficou para pagar depois aparece à parte.
+  const amount = day.reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
+  const lines = [
+    `🍦 *Maxbono Sorvetes — fechamento de ${formatShortDate(dateStr)}*`,
+    "",
+    `*Total: ${plural(total)} · ${formatMoney(amount)}*`,
+    ...productLines(day),
+  ];
+  const owed = openDebtCents(day, defaults);
+  // Pendências de outros dias que foram pagas hoje.
+  const settled = sales
+    .filter((s) => s.saleDate !== dateStr && s.paidAt && incomeDate(s) === dateStr)
+    .reduce((acc, s) => acc + saleAmount(s, defaults), 0);
+  if (owed > 0 || settled > 0) lines.push("");
+  if (owed > 0) lines.push(`💸 A receber (pagar depois): ${formatMoney(owed)}`);
+  if (settled > 0) lines.push(`✅ Pendências antigas recebidas hoje: ${formatMoney(settled)}`);
 
   const byRoute = routes
-    .map((r) => ({ name: r.name, qty: day.filter((s) => s.routeId === r.id).reduce((a, s) => a + s.total, 0) }))
+    .map((r) => {
+      const list = day.filter((s) => s.routeId === r.id);
+      return {
+        name: r.name,
+        list,
+        qty: list.reduce((a, s) => a + s.total, 0),
+        cents: list.reduce((a, s) => a + receivedAmount(s, defaults), 0),
+        owed: openDebtCents(list, defaults),
+      };
+    })
     .filter((r) => r.qty > 0);
   if (byRoute.length) {
     lines.push("", "*Por rota*");
-    for (const r of byRoute) lines.push(`• ${r.name}: ${r.qty}`);
+    for (const r of byRoute) {
+      const owedNote = r.owed > 0 ? ` (+ ${formatMoney(r.owed)} a receber)` : "";
+      lines.push("", `📍 *${r.name}* — ${plural(r.qty)} · ${formatMoney(r.cents)}${owedNote}`, ...productLines(r.list, "   "));
+    }
   }
   return lines.join("\n");
 }
