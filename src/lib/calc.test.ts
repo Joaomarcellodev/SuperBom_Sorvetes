@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { buildDailySummary, buildSalesCsv } from "./export";
 import { defaultFilters, matchesFilters, periodStart } from "./filters";
-import { amountFor, computeFinance, priceMap, saleAmount } from "./finance";
+import { amountFor, computeFinance, incomeDate, priceMap, saleAmount } from "./finance";
+import { formatMoney } from "./money";
+import { paymentDescription } from "./payment";
 import { buildBuckets, granularityFor, niceScale } from "./series";
 import { computeDashboard } from "./stats";
 import type { Expense, Route, Sale, Seller } from "./types";
@@ -23,6 +25,7 @@ const mk = (over: Partial<Sale>): Sale => ({
   ...over,
 });
 const routes: Route[] = [{ id: "r1", name: "Norte", cities: [], createdAt: "", dirty: 0 }];
+const prices = { simples: 250, cobertura: 400, cremosinho: 200 };
 const sellers: Seller[] = [
   { id: "joao", name: "João", role: "Sócio", pinHash: "" },
   { id: "pedro", name: "Pedro", role: "CEO", pinHash: "" },
@@ -87,6 +90,15 @@ describe("financeiro", () => {
     expect(r).toMatchObject({ incomeCents: 3000, expenseCents: 1700, balanceCents: 1300, estimatedSales: 1 });
     expect(r.byCategory[0]).toMatchObject({ id: "combustivel", cents: 1200 });
   });
+  it("pendência em aberto não entra nas entradas até ser paga", () => {
+    const open = mk({ items: { simples: 10 }, total: 10, paymentStatus: "pendente", paymentMethod: null });
+    expect(computeFinance([open], [], defaults).incomeCents).toBe(0);
+    expect(computeFinance([{ ...open, paymentStatus: "pago", paymentMethod: "dinheiro" }], [], defaults).incomeCents).toBe(3000);
+  });
+  it("pendência paga conta no dia do pagamento", () => {
+    expect(incomeDate(mk({ saleDate: "2026-11-01" }))).toBe("2026-11-01");
+    expect(incomeDate(mk({ saleDate: "2026-11-01", paidAt: "2026-11-07T15:00:00" }))).toBe("2026-11-07");
+  });
 });
 
 describe("painel", () => {
@@ -111,6 +123,17 @@ describe("painel", () => {
     expect(d.packages).toBe(20);
     expect(d.deltaPackages).toBe(100); // 20 vs 10 (o dia 20/10 fica fora: depois do dia 7)
   });
+  it("faturamento não soma pendência em aberto e soma a quitada no dia em que foi paga", () => {
+    const defaults = { simples: 300, cobertura: 0, cremosinho: 0 };
+    const sales = [
+      mk({ total: 10 }), // paga hoje: R$ 30
+      mk({ total: 10, paymentStatus: "pendente", paymentMethod: null }), // em aberto: fora
+      mk({ saleDate: "2026-11-01", total: 10, paymentStatus: "pago", paymentMethod: "pix", paidAt: `${TODAY}T15:00:00` }), // quitada hoje
+    ];
+    const d = computeDashboard(sales, defaultFilters("today"), TODAY, defaults, routes, sellers);
+    expect(d.packages).toBe(20); // pacotes contam no dia da venda, pagos ou não
+    expect(d.amountCents).toBe(6000);
+  });
   it("rota excluída continua com nome nos totais", () => {
     const d = computeDashboard([mk({ routeId: "r1" })], defaultFilters("today"), TODAY, priceMap([]), [{ ...routes[0]!, deletedAt: "x" }], sellers);
     expect(d.byRoute[0]?.label).toBe("Norte");
@@ -126,8 +149,55 @@ describe("exportação", () => {
     expect(lines[1]).toContain('"Bar ""do Zé""; centro"');
   });
   it("resumo do WhatsApp soma só o dia", () => {
-    const text = buildDailySummary(TODAY, [mk({ total: 10 }), mk({ saleDate: "2026-11-06", total: 99 })], routes);
+    const text = buildDailySummary(TODAY, [mk({ total: 10 }), mk({ saleDate: "2026-11-06", total: 99 })], routes, prices);
     expect(text).toContain("Total: 10 pacotes");
-    expect(text).toContain("Norte: 10");
+    expect(text).toContain("*Norte* — 10 pacotes");
+  });
+  it("resumo do WhatsApp traz emoji por produto e o valor de cada rota", () => {
+    const two: Route[] = [...routes, { id: "r2", name: "Sul", cities: [], createdAt: "", dirty: 0 }];
+    const text = buildDailySummary(
+      TODAY,
+      [
+        mk({ items: { simples: 10, cobertura: 2 }, total: 12, unitPrices: { simples: 300, cobertura: 500 }, amountCents: 4000 }),
+        mk({ routeId: "r2", items: { cremosinho: 4 }, total: 4 }),
+      ],
+      two,
+      prices,
+    );
+    expect(text).toContain(`*Total: 16 pacotes · ${formatMoney(4800)}*`);
+    expect(text).toContain("🍧 Picolé Simples: 10");
+    expect(text).toContain(`📍 *Norte* — 12 pacotes · ${formatMoney(4000)}`);
+    expect(text).toContain("   🍫 Picolé de Cobertura: 2");
+    expect(text).toContain(`📍 *Sul* — 4 pacotes · ${formatMoney(800)}`);
+    expect(text).toContain("   🍨 Cremosinho: 4");
+    expect(text).not.toContain("A receber");
+  });
+  it("resumo do WhatsApp não soma a pendência no total e mostra o que ficou para pagar depois", () => {
+    const text = buildDailySummary(TODAY, [mk({}), mk({ paymentStatus: "pendente", paymentMethod: null })], routes, prices);
+    expect(text).toContain(`*Total: 20 pacotes · ${formatMoney(2500)}*`);
+    expect(text).toContain(`💸 A receber (pagar depois): ${formatMoney(2500)}`);
+    expect(text).toContain(`📍 *Norte* — 20 pacotes · ${formatMoney(2500)} (+ ${formatMoney(2500)} a receber)`);
+  });
+  it("resumo do WhatsApp mostra pendência antiga recebida hoje", () => {
+    const paidToday = mk({ saleDate: "2026-11-01", paymentStatus: "pago", paymentMethod: "pix", paidAt: `${TODAY}T15:00:00` });
+    const text = buildDailySummary(TODAY, [mk({}), paidToday], routes, prices);
+    expect(text).toContain(`✅ Pendências antigas recebidas hoje: ${formatMoney(2500)}`);
+    expect(text).toContain(`*Total: 10 pacotes · ${formatMoney(2500)}*`);
+  });
+});
+
+describe("pendências", () => {
+  it("filtro de pagamento separa a receber e pagas", () => {
+    const f = { ...defaultFilters("all"), payment: "pendente" as const };
+    expect(matchesFilters({ date: TODAY, payment: "pendente" }, f, TODAY)).toBe(true);
+    expect(matchesFilters({ date: TODAY, payment: "pago" }, f, TODAY)).toBe(false);
+    expect(matchesFilters({ date: TODAY }, f, TODAY)).toBe(true); // telas sem o filtro não são afetadas
+    expect(matchesFilters({ date: TODAY, payment: "pago" }, { ...f, payment: "pago" }, TODAY)).toBe(true);
+  });
+  it("mostra quando a pendência foi paga", () => {
+    expect(paymentDescription({ saleDate: "2026-11-01", paymentMethod: "pix", paidAt: "2026-11-07T15:05:00" })).toBe(
+      "Paga em 07/11/2026 às 15:05 · PIX",
+    );
+    expect(paymentDescription({ saleDate: TODAY, paymentMethod: "dinheiro", paidAt: null })).toBe("Dinheiro");
   });
 });

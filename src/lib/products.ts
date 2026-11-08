@@ -4,13 +4,15 @@ export interface Product {
   id: ProductId;
   name: string;
   short: string;
+  /** usado nos textos (resumo do WhatsApp) */
+  emoji: string;
 }
 
 /** Os três tipos vendidos hoje. Para criar outro, basta incluir aqui (items é jsonb no banco). */
 export const PRODUCTS: readonly Product[] = [
-  { id: "simples", name: "Picolé Simples", short: "Simples" },
-  { id: "cobertura", name: "Picolé de Cobertura", short: "Cobertura" },
-  { id: "cremosinho", name: "Cremosinho", short: "Cremosinho" },
+  { id: "simples", name: "Picolé Simples", short: "Simples", emoji: "🍧" },
+  { id: "cobertura", name: "Picolé de Cobertura", short: "Cobertura", emoji: "🍫" },
+  { id: "cremosinho", name: "Cremosinho", short: "Cremosinho", emoji: "🍨" },
 ] as const;
 
 export const emptyItems = (): Record<ProductId, number> => ({

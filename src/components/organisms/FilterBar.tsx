@@ -1,35 +1,39 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { MapPin, SlidersHorizontal, UserRound, X } from "lucide-react";
+import { HandCoins, MapPin, SlidersHorizontal, UserRound, X } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { Select } from "../atoms/Select";
 import { Field } from "../molecules/Field";
 import { Modal } from "../molecules/Modal";
 import { SegmentedControl } from "../molecules/SegmentedControl";
 import { cn } from "@/lib/format";
-import { PERIODS, activeExtraFilters, type Filters } from "@/lib/filters";
+import { PAYMENT_FILTERS, PERIODS, activeExtraFilters, type Filters } from "@/lib/filters";
 import type { Route, Seller } from "@/lib/types";
 
 /**
  * Filtro único do app: período sempre à mostra + botão "Filtros" (rota e vendedor) com contador.
  * Os filtros ligados aparecem como etiquetas removíveis logo abaixo.
- * Passe `routes`/`sellers` só nas telas em que fazem sentido.
+ * Passe `routes`/`sellers`/`paymentFilter` só nas telas em que fazem sentido.
  */
 export function FilterBar({
   value,
   onChange,
   routes,
   sellers,
+  paymentFilter,
 }: {
   value: Filters;
   onChange: (next: Filters) => void;
   routes?: Route[];
   sellers?: Seller[];
+  /** mostra o filtro de pagamento (a receber / pagas) */
+  paymentFilter?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const extra = activeExtraFilters(value);
-  const hasExtraOptions = Boolean(routes?.length || sellers?.length);
+  const hasExtraOptions = Boolean(routes?.length || sellers?.length || paymentFilter);
+  const paymentLabel = PAYMENT_FILTERS.find((p) => p.id === value.payment && p.id)?.label;
   const routeName = routes?.find((r) => r.id === value.routeId)?.name;
   const sellerName = sellers?.find((s) => s.id === value.sellerId)?.name;
   const set = (patch: Partial<Filters>) => onChange({ ...value, ...patch });
@@ -61,6 +65,7 @@ export function FilterBar({
         <div className="flex flex-wrap gap-1.5">
           {routeName && <ActiveTag icon={<MapPin />} label={routeName} onRemove={() => set({ routeId: "" })} />}
           {sellerName && <ActiveTag icon={<UserRound />} label={sellerName} onRemove={() => set({ sellerId: "" })} />}
+          {paymentLabel && <ActiveTag icon={<HandCoins />} label={paymentLabel} onRemove={() => set({ payment: "" })} />}
         </div>
       )}
 
@@ -70,7 +75,7 @@ export function FilterBar({
         title="Filtros"
         footer={
           <>
-            <Button variant="soft" fullWidth disabled={!extra} onClick={() => set({ routeId: "", sellerId: "" })}>
+            <Button variant="soft" fullWidth disabled={!extra} onClick={() => set({ routeId: "", sellerId: "", payment: "" })}>
               Limpar
             </Button>
             <Button fullWidth onClick={() => setOpen(false)}>
@@ -79,6 +84,12 @@ export function FilterBar({
           </>
         }
       >
+        {paymentFilter && (
+          <div className="space-y-1.5">
+            <span className="text-label-md text-on-surface-variant">Pagamento</span>
+            <SegmentedControl label="Pagamento" options={PAYMENT_FILTERS} value={value.payment} onChange={(payment) => set({ payment })} />
+          </div>
+        )}
         {routes && routes.length > 0 && (
           <Field label="Rota">
             <Select icon={<MapPin />} value={value.routeId} onChange={(e) => set({ routeId: e.target.value })}>

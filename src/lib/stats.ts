@@ -1,5 +1,5 @@
 import { matchesFilters, periodStart, type Filters } from "./filters";
-import { saleAmount } from "./finance";
+import { incomeDate, receivedAmount } from "./finance";
 import { addDays, parseDateStr, startOfMonth } from "./format";
 import { PRODUCTS } from "./products";
 import { buildBuckets, type Bucket } from "./series";
@@ -53,18 +53,19 @@ export function computeDashboard(
 ): Dashboard {
   const inView = sales.filter((s) => matchesFilters({ date: s.saleDate, routeId: s.routeId, sellerId: s.sellerId }, filters, today));
   const packages = sumTotal(inView);
-  const amountCents = inView.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
+  // Dinheiro: só o que já foi pago, no dia em que entrou (pendência quitada conta no dia do pagamento).
+  const paidInView = sales.filter((s) => matchesFilters({ date: incomeDate(s), routeId: s.routeId, sellerId: s.sellerId }, filters, today));
+  const amountCents = paidInView.reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
 
   const prev = previousWindow(filters, today);
-  const before = prev
-    ? sales.filter(
-        (s) =>
-          s.saleDate >= prev.from &&
-          s.saleDate <= prev.to &&
-          (!filters.routeId || s.routeId === filters.routeId) &&
-          (!filters.sellerId || s.sellerId === filters.sellerId),
-      )
-    : [];
+  const inWindow = (date: string, s: Sale) =>
+    prev !== null &&
+    date >= prev.from &&
+    date <= prev.to &&
+    (!filters.routeId || s.routeId === filters.routeId) &&
+    (!filters.sellerId || s.sellerId === filters.sellerId);
+  const before = sales.filter((s) => inWindow(s.saleDate, s));
+  const amountBefore = sales.filter((s) => inWindow(incomeDate(s), s)).reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
 
   const from = periodStart(filters.period, today) || inView.map((s) => s.saleDate).sort()[0] || today;
   const { buckets } = buildBuckets(
@@ -87,7 +88,7 @@ export function computeDashboard(
     count: inView.length,
     avgPackages: inView.length ? Math.round((packages / inView.length) * 10) / 10 : 0,
     deltaPackages: prev ? delta(packages, sumTotal(before)) : null,
-    deltaAmount: prev ? delta(amountCents, before.reduce((acc, s) => acc + saleAmount(s, defaults), 0)) : null,
+    deltaAmount: prev ? delta(amountCents, amountBefore) : null,
     buckets,
     byProduct: PRODUCTS.map((p) => ({ id: p.id, label: p.name, value: inView.reduce((acc, s) => acc + (s.items[p.id] ?? 0), 0) })),
     byRoute: group((s) => s.routeId, (id) => routes.find((r) => r.id === id)?.name ?? "Rota removida"),

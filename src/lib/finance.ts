@@ -1,3 +1,4 @@
+import { toDateStr } from "./format";
 import { PRODUCTS } from "./products";
 import type { Expense, ExpenseCategory, ProductId, ProductPrice, Sale, UnitPrices } from "./types";
 
@@ -34,9 +35,22 @@ export const amountFor = (items: Sale["items"], unitPrices: UnitPrices): number 
 export const saleAmount = (sale: Sale, defaults: Record<ProductId, number>): number =>
   hasUnitPrices(sale) ? (sale.amountCents ?? amountFor(sale.items, sale.unitPrices ?? {})) : amountFor(sale.items, defaults);
 
+/** Pendência em aberto: o cliente levou e ainda não pagou. Vendas antigas (sem o campo) contam como pagas. */
+export const isOpenDebt = (sale: Pick<Sale, "paymentStatus" | "deletedAt">): boolean =>
+  sale.paymentStatus === "pendente" && !sale.deletedAt;
+
+/** Valor que já entrou no caixa: pendência em aberto vale 0 até alguém tocar em "Receber". */
+export const receivedAmount = (sale: Sale, defaults: Record<ProductId, number>): number =>
+  isOpenDebt(sale) ? 0 : saleAmount(sale, defaults);
+
+/** Dia em que o dinheiro entrou: pendência quitada conta no dia do pagamento, não no da venda. */
+export const incomeDate = (sale: Pick<Sale, "saleDate" | "paidAt">): string =>
+  sale.paidAt ? toDateStr(new Date(sale.paidAt)) : sale.saleDate;
+
 export const sumExpenses = (list: Expense[]): number => list.reduce((acc, e) => acc + e.amountCents, 0);
 
 export interface FinanceSummary {
+  /** só o que já foi pago (pendências em aberto ficam de fora) */
   incomeCents: number;
   expenseCents: number;
   balanceCents: number;
@@ -46,7 +60,7 @@ export interface FinanceSummary {
 }
 
 export function computeFinance(sales: Sale[], expenses: Expense[], defaults: Record<ProductId, number>): FinanceSummary {
-  const incomeCents = sales.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
+  const incomeCents = sales.reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
   const expenseCents = sumExpenses(expenses);
   const byCategory = EXPENSE_CATEGORIES.map((c) => ({
     id: c.id,

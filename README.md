@@ -14,7 +14,7 @@ Cada sócio registra os pacotes vendidos no celular, acompanha o desempenho e o 
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS_4-06b6d4?logo=tailwindcss&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ecf8e?logo=supabase&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-offline--first-5a0fc8?logo=pwa&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-36_passando-2ea44f?logo=vitest&logoColor=white)
+![Testes](https://img.shields.io/badge/testes-53_passando-2ea44f?logo=vitest&logoColor=white)
 
 </div>
 
@@ -40,6 +40,9 @@ Quem vende sorvete por rota passa o dia em mercadinhos, bares e cidades vizinhas
 - Rota e cliente/ponto (com autocompletar dos pontos já atendidos).
 - Quantidade por produto: Picolé Simples, Picolé de Cobertura e Cremosinho.
 - Valor calculado pelo preço padrão, com ajuste só para aquela venda (cliente com desconto, por exemplo).
+- Forma de pagamento: **dinheiro**, **PIX** (QR Code e copia e cola com o valor, gerados no aparelho, funciona offline) ou **pagar depois**.
+- **Pendências por rota:** quem levou e ainda não pagou aparece ao escolher a rota, para cobrar na próxima passada.
+- **Recibo em PDF** com o logo da distribuidora, para compartilhar com o cliente.
 - Data ajustável e observação.
 
 ### 💰 Financeiro
@@ -49,8 +52,10 @@ Quem vende sorvete por rota passa o dia em mercadinhos, bares e cidades vizinhas
 - Tabela de preços por pacote compartilhada entre os sócios.
 
 ### 🗂️ Histórico e dados
-- Vendas agrupadas por dia, com filtros e exclusão.
-- Exportação para **Excel/CSV** e resumo do fechamento do dia pronto para o **WhatsApp**.
+- Vendas agrupadas por dia com pacotes e valor, filtros e exclusão.
+- Forma de pagamento de cada venda, recibo em PDF e recebimento das pendências.
+- Exportação para **Excel/CSV** e resumo do fechamento do dia pronto para o **WhatsApp** (produtos com emoji, valor total, pacotes e valor por rota e o que ficou a receber).
+- Aviso na tela quando o aparelho sincroniza com a nuvem.
 
 ### 👤 Perfil e rotas
 - Entrada por perfil + **PIN** de 4 dígitos, conferido no próprio aparelho (funciona offline).
@@ -108,7 +113,7 @@ supabase/migrations/   esquema do banco, em ordem
 
 ## Qualidade
 
-- **36 testes** cobrindo a sincronização (envio, recebimento, exclusões, mudanças do sócio, banco com migração faltando), cálculos de financeiro e do painel, exportação e troca de PIN, rodando contra um Supabase falso em memória.
+- **53 testes** cobrindo a sincronização (envio, recebimento, exclusões, pagamentos e pendências, mudanças do sócio, banco com migração faltando), cálculos de financeiro e do painel, exportação, PIX (exemplo oficial do BR Code), recibo e troca de PIN, rodando contra um Supabase falso em memória.
 - Tipagem estrita de ponta a ponta e build de produção verificado a cada mudança.
 - Interface testada em larguras de celular a partir de 320 px.
 
@@ -126,7 +131,7 @@ O passo a passo do banco (migrações, sócios, PIN), deploy e detalhes da sincr
 
 - Login com Supabase Auth no lugar da chave pública com RLS aberta.
 - Editar venda e gasto (hoje é apagar e registrar de novo).
-- Valor em R$ na exportação CSV e no resumo do WhatsApp.
+- Valor em R$ e forma de pagamento na exportação CSV.
 
 ---
 
