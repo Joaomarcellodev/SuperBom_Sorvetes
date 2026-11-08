@@ -5,7 +5,8 @@ import { ChevronRight, Download, FileSpreadsheet, FolderArchive, MessageCircle, 
 import { Card } from "../atoms/Card";
 import { ConfirmDialog } from "../molecules/ConfirmDialog";
 import { SettingsRow } from "../molecules/SettingsRow";
-import { useRoutes, useSales, useSellers } from "@/hooks/useData";
+import { usePrices, useRoutes, useSales, useSellers } from "@/hooks/useData";
+import { priceMap } from "@/lib/finance";
 import { buildDailySummary, buildSalesCsv, downloadTextFile } from "@/lib/export";
 import { addDays, todayStr } from "@/lib/format";
 import { purgeSyncedBefore } from "@/lib/repo";
@@ -17,6 +18,7 @@ export function DataTools() {
   const sales = useSales();
   const routes = useRoutes();
   const sellers = useSellers();
+  const prices = usePrices();
   const { toast } = useToast();
   const [confirmPurge, setConfirmPurge] = useState(false);
 
@@ -30,7 +32,7 @@ export function DataTools() {
 
   const shareWhatsapp = () => {
     if (!sales || !routes) return;
-    const text = buildDailySummary(todayStr(), sales, routes);
+    const text = buildDailySummary(todayStr(), sales, routes, priceMap(prices));
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   };
 

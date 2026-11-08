@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildDailySummary, buildSalesCsv } from "./export";
 import { defaultFilters, matchesFilters, periodStart } from "./filters";
 import { amountFor, computeFinance, priceMap, saleAmount } from "./finance";
+import { formatMoney } from "./money";
 import { buildBuckets, granularityFor, niceScale } from "./series";
 import { computeDashboard } from "./stats";
 import type { Expense, Route, Sale, Seller } from "./types";
@@ -23,6 +24,7 @@ const mk = (over: Partial<Sale>): Sale => ({
   ...over,
 });
 const routes: Route[] = [{ id: "r1", name: "Norte", cities: [], createdAt: "", dirty: 0 }];
+const prices = { simples: 250, cobertura: 400, cremosinho: 200 };
 const sellers: Seller[] = [
   { id: "joao", name: "João", role: "Sócio", pinHash: "" },
   { id: "pedro", name: "Pedro", role: "CEO", pinHash: "" },
@@ -126,8 +128,26 @@ describe("exportação", () => {
     expect(lines[1]).toContain('"Bar ""do Zé""; centro"');
   });
   it("resumo do WhatsApp soma só o dia", () => {
-    const text = buildDailySummary(TODAY, [mk({ total: 10 }), mk({ saleDate: "2026-11-06", total: 99 })], routes);
+    const text = buildDailySummary(TODAY, [mk({ total: 10 }), mk({ saleDate: "2026-11-06", total: 99 })], routes, prices);
     expect(text).toContain("Total: 10 pacotes");
-    expect(text).toContain("Norte: 10");
+    expect(text).toContain("*Norte* — 10 pacotes");
+  });
+  it("resumo do WhatsApp traz emoji por produto e o valor de cada rota", () => {
+    const two: Route[] = [...routes, { id: "r2", name: "Sul", cities: [], createdAt: "", dirty: 0 }];
+    const text = buildDailySummary(
+      TODAY,
+      [
+        mk({ items: { simples: 10, cobertura: 2 }, total: 12, unitPrices: { simples: 300, cobertura: 500 }, amountCents: 4000 }),
+        mk({ routeId: "r2", items: { cremosinho: 4 }, total: 4 }),
+      ],
+      two,
+      prices,
+    );
+    expect(text).toContain(`*Total: 16 pacotes · ${formatMoney(4800)}*`);
+    expect(text).toContain("🍧 Picolé Simples: 10");
+    expect(text).toContain(`📍 *Norte* — 12 pacotes · ${formatMoney(4000)}`);
+    expect(text).toContain("   🍫 Picolé de Cobertura: 2");
+    expect(text).toContain(`📍 *Sul* — 4 pacotes · ${formatMoney(800)}`);
+    expect(text).toContain("   🍨 Cremosinho: 4");
   });
 });
