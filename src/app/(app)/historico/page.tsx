@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/atoms/Skeleton";
 import { ConfirmDialog } from "@/components/molecules/ConfirmDialog";
 import { PageHeading } from "@/components/molecules/PageHeading";
 import { FilterBar } from "@/components/organisms/FilterBar";
+import { ReceivePaymentModal } from "@/components/organisms/ReceivePaymentModal";
 import { SalesHistoryList } from "@/components/organisms/SalesHistoryList";
 import { usePrices, useRoutes, useSales, useSellers } from "@/hooks/useData";
 import { priceMap, saleAmount } from "@/lib/finance";
@@ -28,6 +29,7 @@ export default function HistoryPage() {
 
   const [filters, setFilters] = useState(defaultFilters);
   const [toDelete, setToDelete] = useState<Sale | null>(null);
+  const [receiving, setReceiving] = useState<Sale | null>(null);
 
   const today = todayStr();
   const filtered = useMemo(
@@ -72,8 +74,10 @@ export default function HistoryPage() {
           currentSellerId={seller?.id}
           defaults={defaults}
           onDelete={setToDelete}
+          onReceive={setReceiving}
         />
       )}
+      <ReceivePaymentModal sale={receiving} defaults={defaults} onClose={() => setReceiving(null)} />
       <ConfirmDialog
         open={toDelete !== null}
         danger
