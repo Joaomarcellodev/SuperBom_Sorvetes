@@ -1,4 +1,4 @@
-import { saleAmount } from "./finance";
+import { incomeDate, receivedAmount, saleAmount } from "./finance";
 import { formatShortDate, formatTime } from "./format";
 import { formatMoney } from "./money";
 import { openDebtCents } from "./payment";
@@ -69,7 +69,8 @@ function productLines(list: Sale[], indent = ""): string[] {
 export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[], defaults: Record<ProductId, number>): string {
   const day = sales.filter((s) => s.saleDate === dateStr);
   const total = day.reduce((acc, s) => acc + s.total, 0);
-  const amount = day.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
+  // Valores em R$ só do que já foi pago; o que ficou para pagar depois aparece à parte.
+  const amount = day.reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
   const lines = [
     `🍦 *Maxbono Sorvetes — fechamento de ${formatShortDate(dateStr)}*`,
     "",
@@ -77,7 +78,13 @@ export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[
     ...productLines(day),
   ];
   const owed = openDebtCents(day, defaults);
-  if (owed > 0) lines.push("", `💸 A receber (pagar depois): ${formatMoney(owed)}`);
+  // Pendências de outros dias que foram pagas hoje.
+  const settled = sales
+    .filter((s) => s.saleDate !== dateStr && s.paidAt && incomeDate(s) === dateStr)
+    .reduce((acc, s) => acc + saleAmount(s, defaults), 0);
+  if (owed > 0 || settled > 0) lines.push("");
+  if (owed > 0) lines.push(`💸 A receber (pagar depois): ${formatMoney(owed)}`);
+  if (settled > 0) lines.push(`✅ Pendências antigas recebidas hoje: ${formatMoney(settled)}`);
 
   const byRoute = routes
     .map((r) => {
@@ -86,14 +93,16 @@ export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[
         name: r.name,
         list,
         qty: list.reduce((a, s) => a + s.total, 0),
-        cents: list.reduce((a, s) => a + saleAmount(s, defaults), 0),
+        cents: list.reduce((a, s) => a + receivedAmount(s, defaults), 0),
+        owed: openDebtCents(list, defaults),
       };
     })
     .filter((r) => r.qty > 0);
   if (byRoute.length) {
     lines.push("", "*Por rota*");
     for (const r of byRoute) {
-      lines.push("", `📍 *${r.name}* — ${plural(r.qty)} · ${formatMoney(r.cents)}`, ...productLines(r.list, "   "));
+      const owedNote = r.owed > 0 ? ` (+ ${formatMoney(r.owed)} a receber)` : "";
+      lines.push("", `📍 *${r.name}* — ${plural(r.qty)} · ${formatMoney(r.cents)}${owedNote}`, ...productLines(r.list, "   "));
     }
   }
   return lines.join("\n");

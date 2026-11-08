@@ -1,4 +1,4 @@
-import { saleAmount } from "./finance";
+import { isOpenDebt, saleAmount } from "./finance";
 import type { PaymentMethod, ProductId, Sale } from "./types";
 
 export const PAYMENT_METHODS: ReadonlyArray<{ id: PaymentMethod; label: string }> = [
@@ -9,9 +9,7 @@ export const PAYMENT_METHODS: ReadonlyArray<{ id: PaymentMethod; label: string }
 export const paymentMethodLabel = (id: PaymentMethod | null | undefined): string =>
   PAYMENT_METHODS.find((m) => m.id === id)?.label ?? "Não informado";
 
-/** Pendência em aberto: o cliente levou e ainda não pagou. Vendas antigas (sem o campo) contam como pagas. */
-export const isOpenDebt = (sale: Pick<Sale, "paymentStatus" | "deletedAt">): boolean =>
-  sale.paymentStatus === "pendente" && !sale.deletedAt;
+export { isOpenDebt };
 
 /** Soma do que falta receber. */
 export const openDebtCents = (sales: Sale[], defaults: Record<ProductId, number>): number =>

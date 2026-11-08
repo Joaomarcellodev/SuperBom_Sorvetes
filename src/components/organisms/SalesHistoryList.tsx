@@ -6,7 +6,7 @@ import { Button } from "../atoms/Button";
 import { SaleListItem } from "../molecules/SaleListItem";
 import { ReceiptButton } from "./ReceiptButton";
 import { isOpenDebt } from "@/lib/payment";
-import { saleAmount } from "@/lib/finance";
+import { receivedAmount, saleAmount } from "@/lib/finance";
 import { formatDayLabel } from "@/lib/format";
 import { formatMoney } from "@/lib/money";
 import { groupByDay } from "@/lib/stats";
@@ -51,7 +51,7 @@ export function SalesHistoryList({
           <div className="flex items-baseline justify-between px-1">
             <h2 className="font-display text-headline-sm">{formatDayLabel(day.date)}</h2>
             <span className="tabular text-label-md font-bold text-primary">
-              {day.total} {day.total === 1 ? "pacote" : "pacotes"} · {formatMoney(day.sales.reduce((acc, s) => acc + saleAmount(s, defaults), 0))}
+              {day.total} {day.total === 1 ? "pacote" : "pacotes"} · {formatMoney(day.sales.reduce((acc, s) => acc + receivedAmount(s, defaults), 0))}
             </span>
           </div>
           {day.sales.map((sale) => (

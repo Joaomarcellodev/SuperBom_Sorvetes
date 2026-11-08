@@ -8,7 +8,7 @@ import { FilterBar } from "@/components/organisms/FilterBar";
 import { ReceivePaymentModal } from "@/components/organisms/ReceivePaymentModal";
 import { SalesHistoryList } from "@/components/organisms/SalesHistoryList";
 import { usePrices, useRoutes, useSales, useSellers } from "@/hooks/useData";
-import { priceMap, saleAmount } from "@/lib/finance";
+import { priceMap, receivedAmount } from "@/lib/finance";
 import { formatMoney } from "@/lib/money";
 import { defaultFilters, matchesFilters } from "@/lib/filters";
 import { todayStr } from "@/lib/format";
@@ -39,7 +39,8 @@ export default function HistoryPage() {
 
   const defaults = priceMap(prices);
   const packages = filtered.reduce((acc, s) => acc + s.total, 0);
-  const amount = filtered.reduce((acc, s) => acc + saleAmount(s, defaults), 0);
+  // Pendência em aberto não soma até ser recebida.
+  const amount = filtered.reduce((acc, s) => acc + receivedAmount(s, defaults), 0);
 
   const confirmDelete = async () => {
     if (!toDelete) return;
