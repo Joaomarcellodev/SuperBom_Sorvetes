@@ -1,7 +1,7 @@
 import { getDb } from "./db";
 import { amountFor } from "./finance";
 import { PRODUCTS, sumItems } from "./products";
-import type { Expense, ExpenseCategory, ProductId, Route, RoutePoint, Sale, SaleItems, UnitPrices } from "./types";
+import type { Expense, ExpenseCategory, PaymentMethod, ProductId, Route, RoutePoint, Sale, SaleItems, UnitPrices } from "./types";
 
 /** Escritas locais. Nada aqui precisa de internet. */
 
@@ -14,6 +14,8 @@ export interface NewSaleInput {
   items: SaleItems;
   /** preço por pacote usado nesta venda (vem do preço padrão, pode ser ajustado) */
   unitPrices: UnitPrices;
+  /** Forma de pagamento. null = o cliente paga depois (vira pendência da rota). Sem o campo = dinheiro. */
+  paymentMethod?: PaymentMethod | null;
 }
 
 export async function saveSale(input: NewSaleInput): Promise<Sale> {
@@ -38,6 +40,9 @@ export async function saveSale(input: NewSaleInput): Promise<Sale> {
     total,
     unitPrices,
     amountCents: amountFor(items, unitPrices),
+    paymentStatus: input.paymentMethod === null ? "pendente" : "pago",
+    paymentMethod: input.paymentMethod === null ? null : (input.paymentMethod ?? "dinheiro"),
+    paidAt: null,
     createdAt: new Date().toISOString(),
     deletedAt: null,
     dirty: 1,
@@ -64,6 +69,11 @@ export async function saveSale(input: NewSaleInput): Promise<Sale> {
 /** Exclusão lógica: a venda some das telas, mas o apagar também precisa chegar ao outro aparelho. */
 export async function deleteSale(id: string): Promise<void> {
   await getDb().sales.update(id, { deletedAt: new Date().toISOString(), dirty: 1 });
+}
+
+/** Quita uma pendência: o cliente pagou numa passada seguinte da rota. */
+export async function settleSale(id: string, method: PaymentMethod): Promise<void> {
+  await getDb().sales.update(id, { paymentStatus: "pago", paymentMethod: method, paidAt: new Date().toISOString(), dirty: 1 });
 }
 
 /** Troca (ou remove, com null) a foto do perfil. Fica no aparelho e sobe na próxima sincronização. */
