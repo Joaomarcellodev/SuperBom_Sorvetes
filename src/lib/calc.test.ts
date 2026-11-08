@@ -149,5 +149,10 @@ describe("exportação", () => {
     expect(text).toContain("   🍫 Picolé de Cobertura: 2");
     expect(text).toContain(`📍 *Sul* — 4 pacotes · ${formatMoney(800)}`);
     expect(text).toContain("   🍨 Cremosinho: 4");
+    expect(text).not.toContain("A receber");
+  });
+  it("resumo do WhatsApp mostra o que ficou para pagar depois", () => {
+    const text = buildDailySummary(TODAY, [mk({}), mk({ paymentStatus: "pendente", paymentMethod: null })], routes, prices);
+    expect(text).toContain(`💸 A receber (pagar depois): ${formatMoney(2500)}`);
   });
 });

@@ -1,6 +1,7 @@
 import { saleAmount } from "./finance";
 import { formatShortDate, formatTime } from "./format";
 import { formatMoney } from "./money";
+import { openDebtCents } from "./payment";
 import { PRODUCTS } from "./products";
 import type { ProductId, Route, Sale, Seller } from "./types";
 
@@ -75,6 +76,8 @@ export function buildDailySummary(dateStr: string, sales: Sale[], routes: Route[
     `*Total: ${plural(total)} · ${formatMoney(amount)}*`,
     ...productLines(day),
   ];
+  const owed = openDebtCents(day, defaults);
+  if (owed > 0) lines.push("", `💸 A receber (pagar depois): ${formatMoney(owed)}`);
 
   const byRoute = routes
     .map((r) => {
